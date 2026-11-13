@@ -28,6 +28,18 @@
       <div class="menu-wrap">
         <button class="menu-trigger" id="file-trigger" aria-haspopup="true" aria-expanded="false" aria-controls="file-menu">File</button>
         <div class="dropdown" id="file-menu" hidden>
+          <div class="menu-heading">QUICK TIMERS</div>
+          <div class="preset-grid" role="group" aria-label="Quick timer presets">
+            <button data-preset="120">2m</button>
+            <button data-preset="300">5m</button>
+            <button data-preset="600">10m</button>
+            <button data-preset="900">15m</button>
+            <button data-preset="1200">20m</button>
+            <button data-preset="1800">30m</button>
+            <button data-preset="2700">45m</button>
+            <button data-preset="3600">60m</button>
+          </div>
+          <div class="dropdown-separator"></div>
           <button id="menu-restart">Restart timer <kbd>R</kbd></button>
           <button id="menu-top" aria-pressed="false">Always on top <span id="top-check"> </span></button>
           <button id="menu-sound" aria-pressed="true">End sound <span id="sound-check">✓</span></button>

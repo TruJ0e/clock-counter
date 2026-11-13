@@ -52,6 +52,16 @@ button:disabled { opacity: .45; cursor: default; }
 .dropdown button:hover { background: #343434; }
 .dropdown kbd { font-family: inherit; font-size: 11px; }
 .dropdown-separator { height: 1px; margin: 4px 2px; background: #747474; }
+.menu-heading { padding: 7px 7px 4px; font-size: 11px; color: #d9d9d9; }
+.preset-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 3px 3px 7px; }
+.dropdown .preset-grid button { display: block; border: 1px solid var(--paper); padding: 9px 2px; text-align: center; font-size: 12px; }
+.dropdown .preset-grid button:hover { background: #333; border-color: var(--green); }
+.dial.completed .time-readout { border-color: var(--red); }
+.dial.completed .time-readout::after {
+  content: "TIME UP"; position: absolute; top: calc(100% + 11px); left: 50%;
+  transform: translateX(-50%); font-size: 13px; color: var(--paper);
+  white-space: nowrap; letter-spacing: 1px;
+}
 
 .timer-area {
   min-height: 0; display: flex; align-items: center; justify-content: center;

@@ -42,3 +42,23 @@ test('deadline countdown remains accurate even after delayed rendering', () => {
   assert.equal(remainingAtDeadline(10000, 2500), 7500);
   assert.equal(remainingAtDeadline(10000, 15000), 0);
 });
+
+
+test('a short timer and hour rollover retain correct time labels', () => {
+  assert.equal(formattedRemaining(61_000), '01:01');
+  assert.equal(formattedRemaining(60_000), '01:00');
+  assert.equal(formattedRemaining(59_001), '01:00');
+  assert.equal(formattedRemaining(59_000), '00:59');
+  assert.equal(formattedRemaining(3_600_000), '01:00:00');
+  assert.equal(formattedRemaining(3_599_999), '01:00:00');
+  assert.equal(formattedRemaining(3_599_000), '59:59');
+  assert.equal(formattedRemaining(359_999_000), '99:59:59');
+});
+
+test('timer elapsed fraction is always bounded from zero to one hundred', () => {
+  assert.equal(elapsedPercentage(50_000, 100_000), 50);
+  assert.equal(elapsedPercentage(200_000, 100_000), 0);
+  assert.equal(elapsedPercentage(0, 100_000), 100);
+  assert.equal(elapsedPercentage(NaN, 100_000), 100);
+  assert.equal(elapsedPercentage(100, -1), 100);
+});

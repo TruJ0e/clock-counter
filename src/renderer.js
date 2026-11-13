@@ -67,7 +67,8 @@ function render() {
   elements.countdown.setAttribute('aria-label', text + ' remaining');
   elements.countdown.classList.toggle('is-long', text.length > 5);
   elements.dial.style.setProperty('--elapsed', elapsed.toFixed(5) + '%');
-  elements.dial.setAttribute('aria-label', Math.round(100 - elapsed) + ' percent of the timer remaining');
+  elements.dial.setAttribute('aria-label', state.ended ? 'Time is up' : Math.round(100 - elapsed) + ' percent of the timer remaining');
+  elements.dial.classList.toggle('completed', state.ended);
   elements.playPause.setAttribute('aria-label', state.running ? 'Pause timer' : 'Start timer');
   elements.playPause.title = state.running ? 'Pause (Space)' : 'Start (Space)';
   elements.playIcon.hidden = state.running;
@@ -191,6 +192,14 @@ function applyFields() {
   reset();
 }
 
+function applyPreset(seconds) {
+  state.durationSeconds = seconds;
+  localStorage.setItem('clock-counter:duration', String(seconds));
+  keepFieldsInSync();
+  reset();
+  closeFileMenu();
+}
+
 function spin(fieldName, step) {
   const field = elements.fields[fieldName];
   const current = Number.parseInt(field.value, 10) || 0;
@@ -228,6 +237,10 @@ for (const [name, input] of Object.entries(elements.fields)) {
   input.addEventListener('change', applyFields);
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') { event.preventDefault(); input.blur(); }
+    if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+      event.preventDefault();
+      spin(name, event.key === 'ArrowUp' ? 1 : -1);
+    }
   });
   input.addEventListener('focus', () => input.select());
   // Guard against accidental scroll-wheel edits and stray characters.
@@ -243,6 +256,9 @@ document.querySelectorAll('[data-field][data-step]').forEach((button) => {
   });
 });
 
+document.querySelectorAll('[data-preset]').forEach((button) => {
+  button.addEventListener('click', () => applyPreset(Number(button.dataset.preset)));
+});
 $('file-trigger').addEventListener('click', toggleFileMenu);
 document.addEventListener('pointerdown', (event) => {
   if (!event.target.closest('.menu-wrap')) closeFileMenu();
@@ -272,7 +288,9 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') { closeFileMenu(); return; }
   if ($('help-dialog').open) return;
   const target = event.target;
-  if (target instanceof HTMLElement && target.closest('input,button,select,textarea')) return;
+  const isEditing = target instanceof HTMLElement && !!target.closest('input,select,textarea,[contenteditable="true"]');
+  if (isEditing) return;
+  if (event.code === 'Space' && target instanceof HTMLElement && target.closest('button')) return;
   if (event.code === 'Space') { event.preventDefault(); togglePlay(); }
   if (event.key.toLowerCase() === 'r' && !event.ctrlKey && !event.metaKey) reset();
   if (event.key.toLowerCase() === 'f' && !event.ctrlKey && !event.metaKey) windowAction('toggle-fullscreen');
