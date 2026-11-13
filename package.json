@@ -18,6 +18,7 @@
   },
   "build": {
     "appId": "com.trujoe.clockcounter",
+    "compression": "store",
     "productName": "CLOCK COUNTER",
     "directories": { "output": "dist" },
     "files": [
