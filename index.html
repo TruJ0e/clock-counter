@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:; object-src 'none'; base-uri 'none'">
+  <meta name="theme-color" content="#050505">
+  <title>CLOCK COUNTER</title>
+  <link rel="stylesheet" href="./src/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="titlebar" aria-label="Window title bar">
+      <svg class="brand-icon" viewBox="0 0 32 38" aria-hidden="true">
+        <path d="M12 3h8M16 3v5M9 8h14M7 14l-3-3M25 14l3-3" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"/>
+        <circle cx="16" cy="23" r="12" fill="none" stroke="currentColor" stroke-width="3"/>
+        <path d="M16 13v11l6 4" fill="none" stroke="currentColor" stroke-width="2"/>
+      </svg>
+      <span class="app-name">CLOCK COUNTER</span>
+      <div class="window-controls">
+        <button id="window-minimize" aria-label="Minimize window" title="Minimize">&#8722;</button>
+        <button id="window-maximize" aria-label="Maximize or restore window" title="Maximize">□</button>
+        <button id="window-close" aria-label="Close window" title="Close">×</button>
+      </div>
+    </header>
+
+    <nav class="menubar" aria-label="Application menu">
+      <div class="menu-wrap">
+        <button class="menu-trigger" id="file-trigger" aria-haspopup="true" aria-expanded="false" aria-controls="file-menu">File</button>
+        <div class="dropdown" id="file-menu" hidden>
+          <button id="menu-restart">Restart timer <kbd>R</kbd></button>
+          <button id="menu-top" aria-pressed="false">Always on top <span id="top-check"> </span></button>
+          <button id="menu-sound" aria-pressed="true">End sound <span id="sound-check">✓</span></button>
+          <button id="menu-fullscreen">Fullscreen <kbd>F</kbd></button>
+          <div class="dropdown-separator"></div>
+          <button id="menu-exit">Exit</button>
+        </div>
+      </div>
+      <button class="menu-trigger" id="help-trigger">Help</button>
+    </nav>
+
+    <main class="timer-area">
+      <div class="dial" id="dial" role="img" aria-label="Countdown pie showing the proportion of time remaining">
+        <svg class="dial-markings" id="dial-markings" viewBox="0 0 400 400" aria-hidden="true" focusable="false"></svg>
+        <output class="time-readout" id="countdown" role="timer" aria-label="Time remaining">30:00</output>
+      </div>
+      <div class="screen-reader-only" id="status" role="status" aria-live="polite"></div>
+    </main>
+
+    <footer class="controls" aria-label="Timer controls">
+      <div class="time-fields" aria-label="Set timer duration">
+        <div class="spin-field">
+          <input id="hours" aria-label="Hours" inputmode="numeric" type="text" pattern="[0-9]*" maxlength="2" value="0" autocomplete="off">
+          <div class="spin-buttons">
+            <button data-field="hours" data-step="1" aria-label="Add one hour">▲</button>
+            <button data-field="hours" data-step="-1" aria-label="Subtract one hour">▼</button>
+          </div>
+        </div>
+        <span class="time-separator">:</span>
+        <div class="spin-field">
+          <input id="minutes" aria-label="Minutes" inputmode="numeric" type="text" pattern="[0-9]*" maxlength="2" value="30" autocomplete="off">
+          <div class="spin-buttons">
+            <button data-field="minutes" data-step="1" aria-label="Add one minute">▲</button>
+            <button data-field="minutes" data-step="-1" aria-label="Subtract one minute">▼</button>
+          </div>
+        </div>
+        <span class="time-separator">:</span>
+        <div class="spin-field">
+          <input id="seconds" aria-label="Seconds" inputmode="numeric" type="text" pattern="[0-9]*" maxlength="2" value="0" autocomplete="off">
+          <div class="spin-buttons">
+            <button data-field="seconds" data-step="1" aria-label="Add one second">▲</button>
+            <button data-field="seconds" data-step="-1" aria-label="Subtract one second">▼</button>
+          </div>
+        </div>
+      </div>
+      <button class="action-button play-button" id="play-pause" aria-label="Start timer" title="Start / Pause (Space)">
+        <svg class="action-icon" id="play-icon" viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M9 4 28 16 9 28Z"/></svg>
+        <svg class="action-icon" id="pause-icon" viewBox="0 0 32 32" aria-hidden="true" hidden><path fill="currentColor" d="M7 4h7v24H7zm11 0h7v24h-7z"/></svg>
+      </button>
+      <button class="action-button reset-button" id="reset" aria-label="Reset timer" title="Reset (R)">
+        <svg class="action-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M7 9v7h7M7 16A11 11 0 1 1 8 22" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter"/></svg>
+      </button>
+    </footer>
+  </div>
+
+  <dialog id="help-dialog" class="help-dialog">
+    <div class="help-heading">CLOCK COUNTER</div>
+    <p>The red area shows how much time is left. As time passes, the red disappears. White dashes are decorative reference points, not minute markers.</p>
+    <p>Set hours, minutes, and seconds with the fields below the clock. Changes start a fresh timer.</p>
+    <p><strong>Space</strong> — start / pause<br><strong>R</strong> — reset<br><strong>F</strong> — fullscreen<br><strong>Esc</strong> — close this help</p>
+    <button id="help-close" class="dialog-close">CLOSE</button>
+  </dialog>
+
+  <script type="module" src="./src/renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+{
+  "name": "clock-counter",
+  "version": "0.1.0",
+  "description": "A compact retro visual countdown timer that makes the passage of time easy to understand.",
+  "private": true,
+  "type": "module",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "test": "node --test tests/*.test.js",
+    "dist:win": "electron-builder --win nsis",
+    "dist:portable": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^45.3.2",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.trujoe.clockcounter",
+    "productName": "CLOCK COUNTER",
+    "directories": { "output": "dist" },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "index.html",
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
