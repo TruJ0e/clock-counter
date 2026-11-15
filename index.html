@@ -91,7 +91,11 @@
           <span class="time-up" hidden>TIME UP</span>
         </div>
       </div>
-      <div class="timer-controls">
+      <div class="controls-drawer" data-collapsed="false">
+        <button class="drawer-toggle" aria-label="Hide timer controls" aria-expanded="true" title="Slide timer controls down" type="button">
+          <span class="drawer-arrow" aria-hidden="true">▼</span>
+        </button>
+        <div class="timer-controls">
         <div class="time-fields" role="group" aria-label="Set clock duration">
           <div class="spin-field">
             <input class="hours-field" aria-label="Hours" inputmode="numeric" type="text" pattern="[0-9]*" maxlength="2" value="0" autocomplete="off">
@@ -115,6 +119,7 @@
         <button class="action-button reset" title="Reset clock (R)" aria-label="Reset clock">
           <svg class="action-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M7 9v7h7M7 16A11 11 0 1 1 8 22" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square"/></svg>
         </button>
+        </div>
       </div>
     </section>
   </template>
@@ -165,6 +170,7 @@
     <div class="dialog-header"><h2 id="help-heading">CLOCK COUNTER</h2><button id="help-close" class="close-dialog" aria-label="Close help">×</button></div>
     <p>Colored space means time remains. As time runs out, that color disappears. Decorative dashes do not represent minutes.</p>
     <p><b>+ Clock</b> creates an independent timer. Resize the window to place clocks side by side. Each has its own duration, direction, color, alarm, and repeat setting.</p>
+    <p>Press Play to start a clock and automatically slide its bottom controls away. Use the small up arrow at the bottom to bring back Play/Pause, Reset and time adjustment; use the down arrow to tuck them away manually. Each clock has its own independent bottom drawer.</p>
     <p>Use the gear on a clock to change its options. Set hours, minutes, and seconds below the dial. Changing a duration resets that clock only.</p>
     <p><b>Space</b>: Start/pause selected clock<br><b>R</b>: Reset selected clock<br><b>Ctrl+N</b>: New clock<br><b>F</b>: Fullscreen<br><b>H</b>: Clock-only mode / restore controls<br><b>Escape</b>: Restore controls or close menu/dialog</p>
     <p><b>File → Timer</b> contains start/pause, reset and timer settings. Clock-only mode shows only your selected clock, without toolbars, while its timer continues to run.</p>

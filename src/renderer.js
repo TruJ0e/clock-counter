@@ -96,6 +96,25 @@ function selectClock(id) {
   updateFocusTarget();
 }
 
+// Each timer has its own bottom control drawer, independent of its countdown.
+function setDrawerCollapsed(id, collapsed) {
+  const refs = tileRefs.get(id);
+  if (!refs) return;
+  const next = Boolean(collapsed);
+  refs.drawer.classList.toggle('collapsed', next);
+  refs.drawer.dataset.collapsed = String(next);
+  refs.drawerToggle.setAttribute('aria-expanded', String(!next));
+  refs.drawerToggle.setAttribute('aria-label', next ? 'Show timer controls' : 'Hide timer controls');
+  refs.drawerToggle.title = next ? 'Slide timer controls up' : 'Slide timer controls down';
+  refs.drawerArrow.textContent = next ? '▲' : '▼';
+
+  // Hidden controls must not remain keyboard focus targets or receive clicks.
+  refs.controls.inert = next;
+  if (next && refs.controls.contains(document.activeElement)) {
+    refs.root.focus({ preventScroll: true });
+  }
+}
+
 function changeClock(id, update, persist = false) {
   const index = state.clocks.findIndex(clock => clock.id === id);
   if (index < 0) return null;
@@ -230,7 +249,8 @@ function toggleClock(id) {
     else updateStatus(clock.name.toUpperCase() + ' — PAUSED');
   } else {
     prepareStart();
-    changeClock(id, old => startClock(old, Date.now()));
+    const started = changeClock(id, old => startClock(old, Date.now()));
+    if (started?.running) setDrawerCollapsed(id, true);
     updateStatus(clock.name.toUpperCase() + ' — RUNNING');
   }
 }
@@ -261,6 +281,10 @@ function createTile(clock) {
     readout: tile.querySelector('.time-readout'),
     timeUp: tile.querySelector('.time-up'),
     cycleCount: tile.querySelector('.cycle-count'),
+    drawer: tile.querySelector('.controls-drawer'),
+    drawerToggle: tile.querySelector('.drawer-toggle'),
+    drawerArrow: tile.querySelector('.drawer-arrow'),
+    controls: tile.querySelector('.timer-controls'),
     play: tile.querySelector('.play-pause'),
     reset: tile.querySelector('.reset'),
     fields: {
@@ -269,6 +293,8 @@ function createTile(clock) {
       seconds: tile.querySelector('.seconds-field')
     }
   };
+  refs.controls.id = 'timer-controls-' + clock.id;
+  refs.drawerToggle.setAttribute('aria-controls', refs.controls.id);
   tileRefs.set(clock.id, refs);
   paintMarkers(refs.markings);
 
@@ -306,6 +332,9 @@ function createTile(clock) {
     button.addEventListener('click', () => spinField(clock.id, button.dataset.field, Number(button.dataset.step)));
   });
 
+  refs.drawerToggle.addEventListener('click', () => {
+    setDrawerCollapsed(clock.id, !refs.drawer.classList.contains('collapsed'));
+  });
   refs.play.addEventListener('click', () => toggleClock(clock.id));
   refs.reset.addEventListener('click', () => resetOne(clock.id));
   tile.querySelector('.tile-settings').addEventListener('click', () => openSettings(clock.id));
@@ -373,7 +402,10 @@ function startAll() {
   const now = Date.now();
   state.clocks = state.clocks.map(clock => startClock(clock, now));
   syncTicker();
-  for (const clock of state.clocks) renderClock(clock);
+  for (const clock of state.clocks) {
+    renderClock(clock);
+    if (clock.running) setDrawerCollapsed(clock.id, true);
+  }
   updateStatus('ALL TIMERS STARTED');
 }
 

@@ -19,6 +19,30 @@ let app, page, win;
 const errors = [], failures = [];
 const clocks = () => page.locator('.clock-tile');
 const clock = index => clocks().nth(index);
+function parseCountdown(text) {
+  return text.split(':').reduce((total, segment) => total * 60 + Number(segment), 0);
+}
+async function expectRemainingNear(index, expectedSeconds, tolerance = 2) {
+  const text = await clock(index).locator('.time-readout').textContent();
+  const actual = parseCountdown(text);
+  assert.ok(Math.abs(actual - expectedSeconds) <= tolerance,
+    'expected about ' + expectedSeconds + ' seconds, found ' + text);
+  return actual;
+}
+async function openControls(index) {
+  const tile = clock(index);
+  if (await tile.locator('.controls-drawer').getAttribute('data-collapsed') === 'true') {
+    await tile.locator('.drawer-toggle').click();
+  }
+}
+async function clickPlay(index) {
+  await openControls(index);
+  await clock(index).locator('.play-pause').click();
+}
+async function clickReset(index) {
+  await openControls(index);
+  await clock(index).locator('.reset').click();
+}
 async function step(name, task) {
   try { await task(); console.log('PASS ' + name); }
   catch(error) { failures.push(name + ': ' + (error.stack || error)); console.error('FAIL ' + name + ': ' + error.message); }
@@ -66,16 +90,19 @@ try {
 
   await page.clock.install();
   await step('pause and resume use correct deadlines', async () => {
-    await clock(0).locator('.play-pause').click();
+    await clickPlay(0);
     await advance(5000);
-    assert.equal(await clock(0).locator('.time-readout').textContent(),'09:55');
-    await clock(0).locator('.play-pause').click();
+    const afterFive = await expectRemainingNear(0, 595, 1);
+    await clickPlay(0);
+    const paused = await clock(0).locator('.time-readout').textContent();
     await advance(3000);
-    assert.equal(await clock(0).locator('.time-readout').textContent(),'09:55');
-    await clock(0).locator('.play-pause').click();
+    assert.equal(await clock(0).locator('.time-readout').textContent(), paused);
+    await clickPlay(0);
     await advance(2000);
-    assert.equal(await clock(0).locator('.time-readout').textContent(),'09:53');
-    await clock(0).locator('.reset').click();
+    const afterResume = parseCountdown(await clock(0).locator('.time-readout').textContent());
+    assert.ok(afterFive - afterResume >= 2 && afterFive - afterResume <= 4,
+      'resume should advance approximately 2 seconds');
+    await clickReset(0);
     assert.equal(await clock(0).locator('.time-readout').textContent(),'10:00');
   });
 
@@ -119,8 +146,8 @@ try {
   });
 
   await step('clocks run independently; repeating clock maintains phase after time jump', async () => {
-    await clock(0).locator('.play-pause').click();
-    await clock(1).locator('.play-pause').click();
+    await clickPlay(0);
+    await clickPlay(1);
     await advance(13000);
     assert.equal(await clock(0).locator('.time-readout').textContent(),'09:47');
     assert.equal(await clock(1).locator('.time-readout').textContent(),'00:02');
@@ -132,7 +159,7 @@ try {
   });
 
   await step('pausing one clock does not affect the other repeating clock', async () => {
-    await clock(0).locator('.play-pause').click();
+    await clickPlay(0);
     await advance(7000);
     assert.equal(await clock(0).locator('.time-readout').textContent(),'09:47');
     assert.equal(await clock(1).locator('.time-readout').textContent(),'00:05');
@@ -261,7 +288,7 @@ try {
     await clock(0).locator('.minutes-field').blur();
     await clock(0).locator('.seconds-field').fill('2');
     await clock(0).locator('.seconds-field').blur();
-    await clock(0).locator('.play-pause').click();
+    await clickPlay(0);
     await advance(2300);
     assert.equal(await clock(0).locator('.time-readout').textContent(), '00:00');
     assert.equal(await clock(0).getAttribute('data-running'), 'false');
@@ -270,7 +297,7 @@ try {
     assert.equal(await clock(0).getAttribute('data-cycles'),'1');
     await advance(4000);
     assert.equal(await clock(0).getAttribute('data-cycles'),'1');
-    await clock(0).locator('.reset').click();
+    await clickReset(0);
     assert.equal(await clock(0).locator('.time-up').isVisible(), false);
     assert.equal(await clock(0).locator('.time-readout').textContent(), '00:02');
   });

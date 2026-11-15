@@ -37,6 +37,15 @@ try {
   await clocks.nth(1).locator('.play-pause').click();
   assert.equal(await clocks.nth(1).getAttribute('data-running'),'true');
   assert.equal(await clocks.first().getAttribute('data-running'),'false');
+  const drawer = clocks.nth(1).locator('.controls-drawer');
+  const arrow = clocks.nth(1).locator('.drawer-toggle');
+  assert.equal(await drawer.getAttribute('data-collapsed'), 'true');
+  assert.equal(await arrow.getAttribute('aria-label'), 'Show timer controls');
+  await arrow.click();
+  assert.equal(await drawer.getAttribute('data-collapsed'), 'false');
+  assert.equal(await clocks.nth(1).getAttribute('data-running'), 'true');
+  await arrow.click();
+  assert.equal(await drawer.getAttribute('data-collapsed'), 'true');
   await page.locator('#file-trigger').click();
   await page.locator('#menu-timer-reset').click();
   assert.equal(await clocks.nth(1).getAttribute('data-running'),'false');
@@ -47,7 +56,7 @@ try {
   assert.equal(await clocks.nth(1).isVisible(), true);
   await page.locator('#focus-restore').click();
   assert.equal(await page.locator('.menubar').isVisible(), true);
-  console.log('PASS packaged CLOCK COUNTER.exe launches; timer menu, compact view, multiple clocks and settings work.');
+  console.log('PASS packaged CLOCK COUNTER.exe launches; timer menu, slide-up timer controls, compact view, multiple clocks and settings work.');
 } finally {
   if (app) await app.close().catch(() => {});
   await fs.rm(profile, { recursive: true, force: true, maxRetries: 3 }).catch(() => {});

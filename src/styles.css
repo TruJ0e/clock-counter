@@ -305,3 +305,66 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   opacity: .23; z-index: 80; -webkit-app-region: no-drag;
 }
 .focus-restore:hover, .focus-restore:focus-visible { opacity: 1; }
+
+/* Slide-up timer drawer. Only the small tab remains when collapsed. */
+.clock-tile {
+  --drawer-panel-height: 69px;
+  --drawer-tab-height: 21px;
+}
+.controls-drawer {
+  flex: 0 0 auto;
+  width: 100%;
+  height: calc(var(--drawer-panel-height) + var(--drawer-tab-height));
+  display: flex;
+  flex-direction: column;
+  background: var(--black);
+  border-top: 2px solid var(--paper);
+  overflow: hidden;
+  transition: height .22s ease;
+}
+.controls-drawer.collapsed {
+  height: var(--drawer-tab-height);
+}
+.drawer-toggle {
+  width: 60px;
+  align-self: center;
+  height: var(--drawer-tab-height);
+  flex: 0 0 var(--drawer-tab-height);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--paper);
+  border-top: 0;
+  border-radius: 0 0 3px 3px;
+  background: #101010;
+  color: var(--paper);
+  font: 12px/1 Arial, sans-serif;
+}
+.drawer-toggle:hover,
+.drawer-toggle:focus-visible { background: #2b2b2b; }
+.controls-drawer.collapsed .drawer-toggle { border-color: #aaa; }
+.drawer-arrow { display: block; line-height: 1; }
+.controls-drawer .timer-controls {
+  flex: 0 0 var(--drawer-panel-height);
+  height: var(--drawer-panel-height);
+  min-height: 0;
+  border-top: 0;
+}
+.controls-drawer.collapsed .timer-controls {
+  visibility: hidden;
+  pointer-events: none;
+}
+@media (max-width: 450px) {
+  .clock-tile { --drawer-panel-height: 59px; --drawer-tab-height: 19px; }
+}
+@media (max-width: 340px) {
+  .clock-tile { --drawer-panel-height: 58px; }
+}
+@media (max-width: 315px) {
+  .clock-tile { --drawer-panel-height: 43px; --drawer-tab-height: 17px; }
+  .drawer-toggle { font-size: 11px; }
+}
+@media (max-height: 410px) {
+  .clock-board.single .clock-tile { --drawer-panel-height: 43px; --drawer-tab-height: 17px; }
+}
+.app-shell.clock-only .controls-drawer { display: none !important; }

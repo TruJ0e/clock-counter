@@ -102,6 +102,9 @@ try {
 
   await page.clock.install();
   await step('clock-only button hides all chrome without pausing timer', async () => {
+    if (await tiles().first().locator('.controls-drawer').getAttribute('data-collapsed') === 'true') {
+      await tiles().first().locator('.drawer-toggle').click();
+    }
     await tiles().first().locator('.minutes-field').fill('0');
     await tiles().first().locator('.minutes-field').blur();
     await tiles().first().locator('.seconds-field').fill('20');
