@@ -1,200 +1,287 @@
-// End-to-end desktop integration test. Uses Electron itself, not a browser mock.
-// Run: npm run test:e2e
+// Runs against a real Electron process and isolated user preferences.
 import assert from 'node:assert/strict';
 import { _electron as electron } from 'playwright-core';
 import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs/promises';
 
-const projectRoot = path.resolve(import.meta.dirname, '..');
-const electronBinary = path.join(projectRoot, 'node_modules', 'electron', 'dist', 'electron.exe');
+const root = path.resolve(import.meta.dirname, '..');
+const executablePath = path.join(root, 'node_modules', 'electron', 'dist', 'electron.exe');
 const profile = await fs.mkdtemp(path.join(os.tmpdir(), 'clock-counter-e2e-'));
 const launchOptions = {
-  executablePath: electronBinary,
-  args: [projectRoot],
-  cwd: projectRoot,
-  timeout: 45000,
+  executablePath, args: [root], cwd: root, timeout: 45000,
   env: { ...process.env, CLOCK_COUNTER_TEST_PROFILE: profile }
 };
-const screenshotDir = path.join(projectRoot, 'tests', 'screenshots');
-await fs.mkdir(screenshotDir, { recursive: true });
-let app;
-let failures = [];
-async function step(title, operation) {
-  try {
-    await operation();
-    console.log('PASS ' + title);
-  } catch (error) {
-    failures.push(title + ': ' + (error?.stack ?? error));
-    console.error('FAIL ' + title + ': ' + error.message);
-  }
+const shotDir = path.join(root, 'tests', 'screenshots');
+await fs.mkdir(shotDir, { recursive: true });
+
+let app, page, win;
+const errors = [], failures = [];
+const clocks = () => page.locator('.clock-tile');
+const clock = index => clocks().nth(index);
+async function step(name, task) {
+  try { await task(); console.log('PASS ' + name); }
+  catch(error) { failures.push(name + ': ' + (error.stack || error)); console.error('FAIL ' + name + ': ' + error.message); }
+}
+async function start() {
+  app = await electron.launch(launchOptions);
+  page = await app.firstWindow({timeout: 20000});
+  await page.locator('.clock-tile').first().waitFor({timeout: 20000});
+  win = await app.browserWindow(page);
+  page.on('pageerror', error => errors.push(error.message));
+}
+async function advance(ms) {
+  await page.clock.fastForward(ms);
+  // Playwright fastForward may invoke a timer before updating its mocked Date.now.
+  // Run one real interval on the advanced clock before reading rendered state.
+  await page.clock.runFor(55);
+}
+async function settingsFor(index) {
+  await clock(index).locator('.tile-settings').click();
+  await page.locator('#settings-dialog').waitFor({ state: 'visible' });
 }
 
 try {
-  app = await electron.launch(launchOptions);
-  const page = await app.firstWindow({ timeout: 20000 });
-  await page.waitForSelector('#countdown', { timeout: 10000 });
-  const window = await app.browserWindow(page);
-  const errors = [];
-  page.on('pageerror', (error) => errors.push(error.message));
-
-  await step('starts as a 30-minute retro timer', async () => {
-    assert.equal(await page.locator('#countdown').textContent(), '30:00');
-    assert.equal(await page.locator('#minutes').inputValue(), '30');
-    assert.equal(await page.locator('#dial-markings line').count(), 24);
-    assert.equal(await page.locator('#dial').evaluate(el => el.style.getPropertyValue('--elapsed')), '0.00000%');
-    assert.equal(await page.getByRole('button', { name: 'Options' }).count(), 0);
-    const dimensions = await window.evaluate(w => w.getBounds());
-    assert.ok(dimensions.width <= 510 && dimensions.height <= 590, 'should stay a mini-window');
+  await start();
+  await step('single mini-window starts red and shows 30 minutes', async () => {
+    assert.equal(await clocks().count(), 1);
+    assert.equal(await clock(0).locator('.time-readout').textContent(), '30:00');
+    assert.equal(await clock(0).locator('.dial-markings line').count(), 24);
+    assert.equal(await clock(0).locator('.dial').getAttribute('data-direction'), 'cw');
+    assert.equal(await clock(0).locator('.dial').getAttribute('data-color'), '#F20B14');
+    assert.equal(await page.locator('#clock-board').evaluate(el => el.classList.contains('single')), true);
+    const b = await win.evaluate(w=>w.getBounds());
+    assert.ok(b.width <= 500 && b.height <= 580);
+    const d = await clock(0).locator('.dial').boundingBox();
+    assert.ok(d.width > 170 && d.height > 170, 'countdown pie visible');
   });
-  await page.screenshot({ path: path.join(screenshotDir, 'clock-counter-default.png') });
+  await page.screenshot({path:path.join(shotDir,'v0.3-single.png')});
 
-  await step('duration controls update live and reset to full red', async () => {
-    await page.locator('#minutes').fill('10');
-    await page.locator('#minutes').blur();
-    assert.equal(await page.locator('#countdown').textContent(), '10:00');
-    assert.equal(await page.locator('#dial').evaluate(el => el.style.getPropertyValue('--elapsed')), '0.00000%');
+  await step('custom duration starts with full dial and ticks accurately', async () => {
+    await clock(0).locator('.minutes-field').fill('10');
+    await clock(0).locator('.minutes-field').blur();
+    assert.equal(await clock(0).locator('.time-readout').textContent(), '10:00');
+    assert.equal(await clock(0).locator('.dial').evaluate(el=>el.style.getPropertyValue('--elapsed')), '0.00000%');
   });
 
-  // Page clock is installed AFTER initial rendering, before timers are started.
   await page.clock.install();
-  await step('countdown changes from 10:00 to 09:55 and pie loses 5 seconds', async () => {
-    await page.locator('#play-pause').click();
-    await page.clock.fastForward(5000);
-    assert.equal(await page.locator('#countdown').textContent(), '09:55');
-    const elapsed = await page.locator('#dial').evaluate(el => parseFloat(el.style.getPropertyValue('--elapsed')));
-    assert.ok(Math.abs(elapsed - 5000/600000*100) < 0.002, 'pie % should be real elapsed fraction, got ' + elapsed);
+  await step('pause and resume use correct deadlines', async () => {
+    await clock(0).locator('.play-pause').click();
+    await advance(5000);
+    assert.equal(await clock(0).locator('.time-readout').textContent(),'09:55');
+    await clock(0).locator('.play-pause').click();
+    await advance(3000);
+    assert.equal(await clock(0).locator('.time-readout').textContent(),'09:55');
+    await clock(0).locator('.play-pause').click();
+    await advance(2000);
+    assert.equal(await clock(0).locator('.time-readout').textContent(),'09:53');
+    await clock(0).locator('.reset').click();
+    assert.equal(await clock(0).locator('.time-readout').textContent(),'10:00');
   });
 
-  await step('pause stays stable regardless of wall-clock advancement', async () => {
-    await page.locator('#play-pause').click();
-    const paused = await page.locator('#countdown').textContent();
-    await page.clock.fastForward(15000);
-    assert.equal(await page.locator('#countdown').textContent(), paused);
-    await page.locator('#play-pause').click();
-    await page.clock.fastForward(1000);
-    assert.equal(await page.locator('#countdown').textContent(), '09:54');
+  await step('adding another clock grows window into two side-by-side columns', async () => {
+    await page.locator('#add-clock').click();
+    assert.equal(await clocks().count(), 2);
+    await page.waitForTimeout(250);
+    const a=await clock(0).boundingBox(), b=await clock(1).boundingBox();
+    assert.ok(b.x > a.x + 100, JSON.stringify({a,b}));
+    assert.equal(await clock(1).locator('.time-readout').textContent(),'30:00');
+    assert.equal(await page.locator('#clock-board').evaluate(el=>el.classList.contains('single')), false);
+  });
+  await page.screenshot({path:path.join(shotDir,'v0.3-multiple.png')});
+
+  await step('second clock accepts independent duration, direction, color and alarms', async () => {
+    await clock(1).locator('.seconds-field').fill('5');
+    await clock(1).locator('.seconds-field').blur();
+    await clock(1).locator('.minutes-field').fill('0');
+    await clock(1).locator('.minutes-field').blur();
+    assert.equal(await clock(1).locator('.time-readout').textContent(), '00:05');
+    assert.equal(await clock(0).locator('.time-readout').textContent(), '10:00');
+    await settingsFor(1);
+    await page.locator('#setting-direction').selectOption('ccw');
+    await page.locator('.color-swatch[data-color="#24C45E"]').click();
+    await page.locator('#setting-alarm').selectOption('bell');
+    await page.locator('#preview-alarm').click();
+    await page.locator('#setting-volume').fill('50');
+    await page.locator('#setting-repeat').check();
+    await page.locator('#setting-show-time').uncheck();
+    assert.equal(await clock(1).locator('.time-readout').isVisible(),false);
+    await page.locator('#setting-show-time').check();
+    await page.locator('#setting-show-ticks').uncheck();
+    assert.equal(await clock(1).locator('.dial-markings').isVisible(),false);
+    await page.locator('#setting-show-ticks').check();
+    await page.locator('#done-settings').click();
+    assert.equal(await clock(1).locator('.dial').getAttribute('data-color'),'#24C45E');
+    assert.equal(await clock(1).locator('.dial').getAttribute('data-direction'),'ccw');
+    assert.equal(await clock(1).getAttribute('data-repeat'),'true');
+    assert.equal(await clock(0).locator('.dial').getAttribute('data-direction'),'cw');
+    assert.equal(await clock(0).locator('.dial').getAttribute('data-color'),'#F20B14');
   });
 
-  await step('reset restores original duration without changing the fields', async () => {
-    await page.locator('#reset').click();
-    assert.equal(await page.locator('#countdown').textContent(), '10:00');
-    assert.equal(await page.locator('#minutes').inputValue(), '10');
-    assert.equal(await page.locator('#dial').evaluate(el => el.style.getPropertyValue('--elapsed')), '0.00000%');
+  await step('clocks run independently; repeating clock maintains phase after time jump', async () => {
+    await clock(0).locator('.play-pause').click();
+    await clock(1).locator('.play-pause').click();
+    await advance(13000);
+    assert.equal(await clock(0).locator('.time-readout').textContent(),'09:47');
+    assert.equal(await clock(1).locator('.time-readout').textContent(),'00:02');
+    assert.equal(await clock(1).getAttribute('data-cycles'),'2');
+    assert.equal(await clock(1).getAttribute('data-running'),'true');
+    const percentage = await clock(1).locator('.dial').evaluate(el => parseFloat(el.style.getPropertyValue('--remaining')));
+    assert.ok(Math.abs(percentage-40)<2, 'repeating pie fraction must be 40%, got '+percentage);
+    assert.equal(await clock(1).locator('.cycle-count').textContent(),'2×');
   });
 
-  await step('zero duration prevents starting, time-up remains visually empty', async () => {
-    await page.locator('#minutes').fill('0');
-    await page.locator('#minutes').blur();
-    assert.equal(await page.locator('#countdown').textContent(), '00:00');
-    assert.equal(await page.locator('#play-pause').isDisabled(), true);
-    await page.locator('#seconds').fill('3');
-    await page.locator('#seconds').blur();
-    await page.locator('#play-pause').click();
-    await page.clock.fastForward(3400);
-    assert.equal(await page.locator('#countdown').textContent(), '00:00');
-    assert.equal(await page.locator('#dial').evaluate(el => el.style.getPropertyValue('--elapsed')), '100.00000%');
-    assert.equal(await page.locator('#play-pause').getAttribute('aria-label'), 'Start timer');
+  await step('pausing one clock does not affect the other repeating clock', async () => {
+    await clock(0).locator('.play-pause').click();
+    await advance(7000);
+    assert.equal(await clock(0).locator('.time-readout').textContent(),'09:47');
+    assert.equal(await clock(1).locator('.time-readout').textContent(),'00:05');
+    assert.equal(await clock(1).getAttribute('data-cycles'),'4');
   });
 
-  await step('file menu, end sound toggle, always-on-top, help dialog operate', async () => {
-    await page.locator('#file-trigger').click();
-    assert.equal(await page.locator('#file-menu').isVisible(), true);
-    await page.locator('#menu-sound').click();
-    assert.equal(await page.locator('#menu-sound').getAttribute('aria-pressed'), 'false');
-    assert.equal(await page.evaluate(() => localStorage.getItem('clock-counter:sound')), 'off');
-    await page.locator('#file-trigger').click();
-    await page.locator('#menu-top').click();
-    await page.waitForFunction(() => document.querySelector('#top-check').textContent === '✓');
-    assert.equal(await window.evaluate(w => w.isAlwaysOnTop()), true);
-    await page.locator('#help-trigger').click();
-    assert.equal(await page.locator('#help-dialog').isVisible(), true);
-    await page.locator('#help-close').click();
-    assert.equal(await page.locator('#help-dialog').isVisible(), false);
+  await step('global pause, start and reset operate on all clocks', async () => {
+    await page.locator('#all-pause').click();
+    assert.equal(await clock(1).getAttribute('data-running'),'false');
+    await advance(7000);
+    assert.equal(await clock(1).locator('.time-readout').textContent(),'00:05');
+    await page.locator('#all-start').click();
+    assert.equal(await clock(0).getAttribute('data-running'),'true');
+    assert.equal(await clock(1).getAttribute('data-running'),'true');
+    await page.locator('#all-reset').click();
+    assert.equal(await clock(0).locator('.time-readout').textContent(),'10:00');
+    assert.equal(await clock(1).locator('.time-readout').textContent(),'00:05');
+    assert.equal(await clock(1).getAttribute('data-cycles'),'0');
   });
 
-  await step('inputs clamp to valid hours/minutes/seconds', async () => {
-    await page.locator('#hours').fill('99');
-    await page.locator('#hours').blur();
-    await page.locator('#minutes').fill('88');
-    await page.locator('#minutes').blur();
-    assert.equal(await page.locator('#minutes').inputValue(), '59');
-    assert.equal(await page.locator('#hours').inputValue(), '99');
-    assert.equal(await page.locator('#countdown').textContent(), '99:59:03');
+  await step('named clocks can be duplicated and removed', async () => {
+    await clock(1).locator('.clock-name').fill('Activity');
+    await clock(1).locator('.clock-name').blur();
+    await settingsFor(1);
+    await page.locator('#duplicate-clock').click();
+    assert.equal(await clocks().count(), 3);
+    assert.equal(await clock(2).locator('.clock-name').inputValue(),'Activity copy');
+    assert.equal(await clock(2).locator('.dial').getAttribute('data-direction'),'ccw');
+    assert.equal(await clock(2).locator('.dial').getAttribute('data-color'),'#24C45E');
+    await clock(2).locator('.tile-remove').click();
+    assert.equal(await clocks().count(),2);
   });
 
-  await step('quick presets and field arrow keys work', async () => {
+  await step('file presets affect only the selected clock', async () => {
+    await clock(1).locator('.clock-name').click();
     await page.locator('#file-trigger').click();
     await page.locator('[data-preset="900"]').click();
-    assert.equal(await page.locator('#countdown').textContent(), '15:00');
-    assert.equal(await page.locator('#minutes').inputValue(), '15');
-    assert.equal(await page.locator('#file-menu').isVisible(), false);
-    await page.locator('#minutes').focus();
-    await page.keyboard.press('ArrowUp');
-    assert.equal(await page.locator('#minutes').inputValue(), '16');
-    await page.keyboard.press('ArrowDown');
-    assert.equal(await page.locator('#minutes').inputValue(), '15');
+    assert.equal(await clock(1).locator('.time-readout').textContent(),'15:00');
+    assert.equal(await clock(0).locator('.time-readout').textContent(),'10:00');
   });
 
-  await step('window remains usable at minimum allowed dimensions', async () => {
-    await window.evaluate(w => w.setBounds({ width: 350, height: 410 }));
-    await page.waitForTimeout(200);
-    const layout = await page.evaluate(() => {
-      const box = (id) => {
-        const rect = document.querySelector('#'+id).getBoundingClientRect();
-        return { x: rect.x, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height };
-      };
-      return {
-        clientWidth: document.documentElement.clientWidth,
-        clientHeight: document.documentElement.clientHeight,
-        scrollWidth: document.documentElement.scrollWidth,
-        scrollHeight: document.documentElement.scrollHeight,
-        dial: box('dial'),
-        playPause: box('play-pause'),
-        reset: box('reset'),
-        countdown: box('countdown')
-      };
-    });
-    assert.ok(layout.scrollWidth <= layout.clientWidth + 1, JSON.stringify(layout));
-    assert.ok(layout.scrollHeight <= layout.clientHeight + 1, JSON.stringify(layout));
-    assert.ok(layout.dial.width >= 140, 'dial should still be visible');
-    assert.ok(layout.reset.right <= layout.clientWidth, JSON.stringify(layout));
-    assert.ok(layout.playPause.bottom <= layout.clientHeight, JSON.stringify(layout));
-    await page.screenshot({ path: path.join(screenshotDir, 'clock-counter-small.png') });
+  await step('custom colors, other alarm sounds, and setting changes persist', async () => {
+    await settingsFor(0);
+    await page.locator('#setting-color').fill('#123abc');
+    await page.locator('#setting-alarm').selectOption('digital');
+    await page.locator('#setting-show-ticks').uncheck();
+    await page.locator('#done-settings').click();
+    assert.equal(await clock(0).locator('.dial').getAttribute('data-color'),'#123ABC');
+    assert.equal(await clock(0).locator('.dial-markings').isVisible(),false);
+    await settingsFor(0);
+    assert.equal(await page.locator('#setting-color').inputValue(),'#123abc');
+    assert.equal(await page.locator('#setting-alarm').inputValue(),'digital');
+    await page.locator('#done-settings').click();
   });
 
-  await step('renderer did not throw JavaScript errors', async () => {
-    assert.deepEqual(errors, []);
+  await step('window can shrink below old minimum and expand freely', async () => {
+    await win.evaluate(w=>w.setBounds({width:250,height:260}));
+    await page.waitForTimeout(130);
+    let b=await win.evaluate(w=>w.getBounds());
+    assert.ok(b.width <= 270 && b.height <= 280,JSON.stringify(b));
+    assert.equal(await page.locator('#add-clock').isVisible(),true);
+    assert.ok(await clock(0).locator('.dial').count()===1);
+    const grip = await page.locator('#resize-grip').boundingBox();
+    await page.mouse.move(grip.x+grip.width/2,grip.y+grip.height/2);
+    await page.mouse.down();
+    await page.mouse.move(grip.x+grip.width/2+110,grip.y+grip.height/2+90,{steps:6});
+    await page.mouse.up();
+    await page.waitForTimeout(120);
+    b=await win.evaluate(w=>w.getBounds());
+    assert.ok(b.width > 270 && b.height > 280,'resize handle should grow window: '+JSON.stringify(b));
+    await win.evaluate(w=>w.setBounds({width:1150,height:800}));
+    await page.waitForTimeout(120);
+    b=await win.evaluate(w=>w.getBounds());
+    assert.ok(b.width>=1000 && b.height>=700,JSON.stringify(b));
+    const a=await clock(0).boundingBox(), c=await clock(1).boundingBox();
+    assert.ok(c.x>a.x+100,'two columns should appear after resizing');
+  });
+  await page.screenshot({path:path.join(shotDir,'v0.3-large.png')});
+
+  await step('file menu and keyboard shortcuts work in the compact window', async () => {
+    await win.evaluate(w=>w.setBounds({width:300,height:350}));
+    await page.locator('#file-trigger').click();
+    await page.locator('#menu-pause-all').click();
+    await page.locator('#file-trigger').click();
+    await page.locator('#menu-top').click();
+    assert.equal(await win.evaluate(w=>w.isAlwaysOnTop()),true);
+    await page.locator('#help-trigger').click();
+    assert.equal(await page.locator('#help-dialog').isVisible(),true);
+    await page.locator('#help-done').click();
+    await page.keyboard.press('Control+n');
+    assert.equal(await clocks().count(),3);
+    await clock(2).locator('.clock-heading').click();
+    await clock(2).focus();
+    await page.keyboard.press('Space');
+    assert.equal(await clock(2).getAttribute('data-running'),'true');
+    await page.keyboard.press('r');
+    assert.equal(await clock(2).getAttribute('data-running'),'false');
+    assert.equal(await clock(2).locator('.time-readout').textContent(),'30:00');
+    await clock(2).locator('.tile-remove').click();
   });
 
-  await step('window dimensions and preferences persist across a full restart', async () => {
-    // Always-on-top was enabled in the menu test above.
-    await window.evaluate(w => w.setBounds({ width: 430, height: 510 }));
-    const settingsPath = await app.evaluate(({ app }) => app.getPath('userData'));
-    assert.equal(path.resolve(settingsPath), path.resolve(profile), 'test settings must be isolated');
-    await app.close();
-    app = null;
-    app = await electron.launch(launchOptions);
-    const reopened = await app.firstWindow();
-    const newWindow = await app.browserWindow(reopened);
-    const bounds = await newWindow.evaluate(w => w.getBounds());
-    assert.equal(bounds.width, 430);
-    assert.equal(bounds.height, 510);
-    assert.equal(await newWindow.evaluate(w => w.isAlwaysOnTop()), true);
-    assert.equal(await reopened.locator('#countdown').textContent(), '15:00');
-    assert.equal(await reopened.evaluate(() => localStorage.getItem('clock-counter:sound')), 'off');
-    const prefs = JSON.parse(await fs.readFile(path.join(profile, 'window-state.json'), 'utf8'));
-    assert.equal(prefs.width, 430);
-    assert.equal(prefs.height, 510);
-    assert.equal(prefs.alwaysOnTop, true);
+  await step('saved preferences restore each clock and window size but not running state', async () => {
+    await win.evaluate(w=>w.setBounds({width:825,height:640}));
+    await app.close(); app=null;
+    await start();
+    assert.equal(await clocks().count(),2);
+    assert.equal(await clock(0).locator('.time-readout').textContent(),'10:00');
+    assert.equal(await clock(0).locator('.dial').getAttribute('data-color'),'#123ABC');
+    assert.equal(await clock(1).locator('.time-readout').textContent(),'15:00');
+    assert.equal(await clock(1).getAttribute('data-repeat'),'true');
+    assert.equal(await clock(1).locator('.dial').getAttribute('data-direction'),'ccw');
+    assert.equal(await clock(1).locator('.clock-name').inputValue(),'Activity');
+    assert.equal(await clock(1).getAttribute('data-running'),'false');
+    const bounds=await win.evaluate(w=>w.getBounds());
+    assert.equal(bounds.width,825);
+    assert.equal(bounds.height,640);
+    assert.equal(await win.evaluate(w=>w.isAlwaysOnTop()),true);
+    const storage=await app.evaluate(({app})=>app.getPath('userData'));
+    assert.equal(path.resolve(storage),path.resolve(profile));
+  });
+
+  await step('non-repeating completion remains empty and cannot fire again', async () => {
+    await page.clock.install();
+    await clock(0).locator('.minutes-field').fill('0');
+    await clock(0).locator('.minutes-field').blur();
+    await clock(0).locator('.seconds-field').fill('2');
+    await clock(0).locator('.seconds-field').blur();
+    await clock(0).locator('.play-pause').click();
+    await advance(2300);
+    assert.equal(await clock(0).locator('.time-readout').textContent(), '00:00');
+    assert.equal(await clock(0).getAttribute('data-running'), 'false');
+    assert.equal(await clock(0).locator('.time-up').isVisible(), true);
+    assert.equal(await clock(0).locator('.dial').evaluate(el => el.style.getPropertyValue('--remaining')), '0.00000%');
+    assert.equal(await clock(0).getAttribute('data-cycles'),'1');
+    await advance(4000);
+    assert.equal(await clock(0).getAttribute('data-cycles'),'1');
+    await clock(0).locator('.reset').click();
+    assert.equal(await clock(0).locator('.time-up').isVisible(), false);
+    assert.equal(await clock(0).locator('.time-readout').textContent(), '00:02');
+  });
+
+  await step('no uncaught renderer JavaScript errors', async () => {
+    assert.deepEqual(errors,[]);
   });
 } finally {
-  if (app) await app.close().catch(() => {});
-  await fs.rm(profile, { recursive: true, force: true, maxRetries: 3 }).catch(() => {});
+  if(app) await app.close().catch(()=>{});
+  await fs.rm(profile,{recursive:true,force:true,maxRetries:5}).catch(()=>{});
 }
-if (failures.length) {
-  console.error('\nFailures:\n' + failures.join('\n\n'));
-  process.exitCode = 1;
-} else {
-  console.log('\nAll Electron UI tests passed.');
-}
+if(failures.length) {
+  console.error('\nTEST FAILURES:\n'+failures.join('\n\n'));
+  process.exitCode=1;
+} else console.log('\nAll multi-clock Electron UI tests passed.');

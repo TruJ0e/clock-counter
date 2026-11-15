@@ -7,12 +7,14 @@ const allowedActions = new Set([
   'maximize',
   'close',
   'toggle-always-on-top',
-  'toggle-fullscreen'
+  'toggle-fullscreen',
+  'resize-to',
+  'fit-clocks'
 ]);
 
 contextBridge.exposeInMainWorld('clockCounterWindow', {
-  action(action) {
-    if (allowedActions.has(action)) ipcRenderer.send('clock-counter:window', action);
+  action(action, payload) {
+    if (allowedActions.has(action)) ipcRenderer.send('clock-counter:window', action, payload);
   },
   onAlwaysOnTop(listener) {
     if (typeof listener !== 'function') return;

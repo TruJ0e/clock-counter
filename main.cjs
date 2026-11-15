@@ -11,7 +11,7 @@ if (process.env.CLOCK_COUNTER_TEST_PROFILE) {
 }
 
 const DEFAULT_SIZE = { width: 490, height: 570 };
-const MIN_SIZE = { width: 350, height: 410 };
+const MIN_SIZE = { width: 250, height: 260 };
 let mainWindow;
 
 function settingsPath() {
@@ -31,9 +31,12 @@ function readSettings() {
 function safeBounds(saved) {
   if (!saved || typeof saved !== 'object') return { ...DEFAULT_SIZE };
 
-  const width = Number.isInteger(saved.width) ? Math.min(1920, Math.max(MIN_SIZE.width, saved.width)) : DEFAULT_SIZE.width;
-  const height = Number.isInteger(saved.height) ? Math.min(1200, Math.max(MIN_SIZE.height, saved.height)) : DEFAULT_SIZE.height;
-  if (!Number.isInteger(saved.x) || !Number.isInteger(saved.y)) return { width, height };
+  const width = Number.isInteger(saved.width) ? Math.max(MIN_SIZE.width, saved.width) : DEFAULT_SIZE.width;
+  const height = Number.isInteger(saved.height) ? Math.max(MIN_SIZE.height, saved.height) : DEFAULT_SIZE.height;
+  if (!Number.isInteger(saved.x) || !Number.isInteger(saved.y)) {
+    const area = screen.getPrimaryDisplay().workArea;
+    return { width: Math.min(width, area.width), height: Math.min(height, area.height) };
+  }
 
   const candidate = { x: saved.x, y: saved.y, width, height };
   const available = screen.getAllDisplays().find((display) => {
@@ -43,7 +46,10 @@ function safeBounds(saved) {
     return xIntersect >= 120 && yIntersect >= 100;
   });
 
-  if (!available) return { width, height }; // Never reopen entirely off-screen.
+  if (!available) {
+    const area = screen.getPrimaryDisplay().workArea;
+    return { width: Math.min(width, area.width), height: Math.min(height, area.height) };
+  } // Never reopen entirely off-screen.
 
   const r = available.workArea;
   return {
@@ -109,7 +115,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  ipcMain.on('clock-counter:window', (event, action) => {
+  ipcMain.on('clock-counter:window', (event, action, payload) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (!win || win.isDestroyed()) return;
 
@@ -128,6 +134,28 @@ app.whenReady().then(() => {
       case 'toggle-fullscreen':
         win.setFullScreen(!win.isFullScreen());
         break;
+      case 'resize-to': {
+        if (win.isFullScreen()) return;
+        const display = screen.getDisplayMatching(win.getBounds()).workArea;
+        const width = Number(payload?.width), height = Number(payload?.height);
+        if (!Number.isFinite(width) || !Number.isFinite(height)) return;
+        if (win.isMaximized()) win.unmaximize();
+        win.setSize(
+          Math.min(display.width, Math.max(MIN_SIZE.width, Math.round(width))),
+          Math.min(display.height, Math.max(MIN_SIZE.height, Math.round(height)))
+        );
+        break;
+      }
+      case 'fit-clocks': {
+        const count = Number(payload?.count);
+        if (!Number.isInteger(count) || count < 2 || count > 12) return;
+        if (win.isFullScreen() || win.isMaximized()) return;
+        const display = screen.getDisplayMatching(win.getBounds()).workArea;
+        const width = Math.min(display.width, 370 * Math.min(count, 5) + 10);
+        const current = win.getBounds();
+        if (current.width < width) win.setSize(width, Math.min(display.height, Math.max(current.height, 560)));
+        break;
+      }
       default:
         break;
     }

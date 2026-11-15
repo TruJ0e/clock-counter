@@ -1,64 +1,81 @@
 # CLOCK COUNTER
 
-A compact, retro-looking visual countdown timer for Windows. The **red pie is the time left**; as time runs out, the red disappears. It is intentionally easy to understand even without interpreting a conventional clock.
+A small, retro-style visual countdown utility for Windows. The **colored portion is the time remaining**. As a clock runs out, the color disappears; the twelve white dashes are optional decorative reference marks, not fixed minute markers. This keeps the timer understandable for people who find abstract time difficult to visualize.
 
-The design is based on the small black utility window we selected: white pixel-like borders, a red timer face, a large central readout, and only a few controls. The twelve white tick marks are **decorative only**. They do not claim to represent fixed minutes; the countdown and shrinking red wedge always correspond to the configured duration.
+CLOCK COUNTER works offline with no account, telemetry, paid API, or subscription.
 
-## Run on Windows
+## Run
 
-Requires Node.js for development, but **no Node.js installation** for a packaged app.
+Windows development: install Node.js, open PowerShell in this repository and run:
 
-1. Open PowerShell in this repository.
-2. Run **npm install**.
-3. Run **npm start**.
+```powershell
+npm install
+npm start
+```
 
-To package a standalone portable Windows executable, run **npm run dist:portable**.
-To build a Windows installer, run **npm run dist:win**.
-To rebuild the old-school stopwatch icon, run **npm run icon:build**.
-The output is placed in the **dist** directory.
+To create an independent Windows executable (Node.js not required on the recipient's PC):
+
+```powershell
+npm run dist:portable
+```
+
+The executable is placed in `dist/CLOCK COUNTER 0.3.0.exe`. Windows installer builds are available with `npm run dist:win`. These personal builds are not code-signed; Windows SmartScreen may warn about an unknown publisher.
+
+## Features
+
+- **Clockwise or counterclockwise:** Choose the direction in each clock's settings. The visual always shows the correct fraction remaining for that clock's actual duration.
+- **Any color:** Nine built-in color presets plus a custom RGB color picker, independently per clock.
+- **Four built-in alarm tones:** Classic chime, beep, bell and retro digital; each clock can also be silent and has a separate volume.
+- **Continuous repeating:** Each clock can restart automatically when it reaches zero. The completed-round count is shown by that clock.
+- **Multiple clocks:** Add up to 12 independently timed clocks, each with its own title, duration, countdown direction, color, alarm, volume and repeat setting. They lay out in columns when window width allows.
+- **Resize:** Drag the lower-right corner to resize the frameless window, or use maximize/fullscreen. The minimum practical size is 250 × 260 pixels; smaller windows may scroll to show all controls. The app automatically widens when clocks are added, as screen space permits.
+- **Start/pause/reset:** Independently control each clock or use Start All, Pause All and Reset All from the toolbar (or File menu on narrow windows).
+- **Quick presets:** 2, 5, 10, 15, 20, 30, 45 or 60 minutes via File > Quick Timers, applied only to the selected clock.
+- **Accessibility:** High contrast, descriptive labels, optional digital time and decorative marks, no flashing transitions, and keyboard shortcuts.
+- **Persistence:** Clock names, durations, colors, directions, alarms, repeat settings, volume, display options, window bounds and always-on-top preference are saved automatically.
+
+Clocks continue counting accurately while the application is **open** and minimized or inactive. Closing CLOCK COUNTER stops all clocks; opening it again restores their saved settings with clocks stopped and reset to their configured durations. Repeating clocks do not generate an unbounded backlog of alarm sounds after a delayed update. At most one alarm is played per clock per update, even if several complete cycles were missed while the PC was asleep.
 
 ## Controls
 
-- **Bottom three fields:** Set hours, minutes, and seconds, in that order. Changes reset the countdown.
-- **Play / Pause:** Start or pause the countdown.
-- **Reset:** Reset to the duration shown in the fields.
-- **File:** Quick timer presets (2, 5, 10, 15, 20, 30, 45 or 60 minutes), restart, toggle always-on-top, toggle the end sound, toggle fullscreen, or exit.
-- **Help:** Built-in explanation of the visual timer and shortcuts.
-- **Space:** Start or pause when not editing a field.
-- **R:** Reset.
-- **F:** Toggle fullscreen.
+Each card has an editable name, a settings gear, an independently rotating colored countdown pie, hours/minutes/seconds fields, Start/Pause and Reset. Clocks can be duplicated or removed from the settings dialog.
 
-Hours, minutes, and seconds can also be adjusted with the up/down arrow keys. The last chosen duration, sound preference, window size, window position, and always-on-top setting persist across restarts. When the timer finishes, the empty dial shows a high-contrast completion indicator.
+- **Space:** Start/pause the selected clock (when not typing).
+- **R:** Reset the selected clock.
+- **Ctrl+N:** Add another independent clock.
+- **F:** Fullscreen.
+- **Arrow up/down:** Change a focused duration field.
+- **File:** Presets, multi-clock controls, always-on-top, fullscreen and exit.
+- **Help:** Built-in guide.
 
-This app runs offline. No account, tracking, APIs, or subscriptions.
+Click a card to select it before using keyboard shortcuts or File > Quick Timers. Audio previews are in the clock settings dialog.
 
-## How the timer works
+## Development and tests
 
-The countdown uses an absolute deadline (current time plus remaining time) instead of subtracting fixed amounts per animation frame. This means the timer doesn't gradually drift if rendering pauses or the window is minimized. The pie measures remaining divided by initial duration for *any* selected duration, not a permanent 60-minute dial.
+```powershell
+npm test               # Pure timer model and sound-pattern tests
+npm run test:e2e       # Real Electron UI tests in an isolated profile
+npm run verify         # Both suites
+npm run dist:portable  # Build Windows portable EXE
+npm run test:packaged  # Smoke-test the packaged Electron app
+```
 
-All time conversion math is in src/timer-core.js, independently testable with **npm test**. Run **npm run verify** to execute both pure logic tests and automated end-to-end UI tests against a real Electron window using Playwright. The UI suite checks timing, sound toggles, presets, input validation, size constraints, persistent settings and JavaScript errors. Test profiles are isolated from your personal settings.
+End-to-end tests exercise: independent timers, opposite countdown directions, repeat timing and phase recovery, color/sound preferences, hide/show options, timer duplication/deletion, quick presets, global controls, very small/large windows, manual resize, settings persistence and completion behavior. Test profiles do not touch your regular CLOCK COUNTER settings.
 
-## Code structure
+## Architecture
 
-- main.cjs — Electron window and constrained window-management IPC
-- preload.cjs — minimal renderer bridge
-- index.html — retro mini-window UI
-- src/styles.css — black background, white borders, red circle, responsive layout
-- src/renderer.js — controls, display, timer lifecycle, optional sound
-- src/timer-core.js — pure countdown calculations
-- tests/timer-core.test.js — built-in Node tests
-- tests/electron-e2e.mjs — automated real-desktop Electron interaction tests
-- assets/icon.ico — custom retro app icon
-- scripts/generate-icon.ps1 — rebuildable icon generator
+- `main.cjs`: Native Electron window, window state persistence and tightly constrained window-control IPC.
+- `preload.cjs`: Isolated, allowlisted bridge for window controls.
+- `index.html`, `src/styles.css`: Retro black mini-window UI with responsive side-by-side cards and settings dialogs.
+- `src/renderer.js`: Independent card views, input handling, scheduling, sound triggers and preference persistence.
+- `src/clocks.js`: Pure, immutable multi-clock state operations and missed-cycle repeat math.
+- `src/timer-core.js`: Time math and formatting independent of Electron.
+- `src/alarms.js`: Built-in generated offline alarm tones.
+- `tests/`: Pure unit tests, Electron UI tests, packaged executable smoke test.
+- `assets/icon.ico`, `scripts/generate-icon.ps1`: Application icon and reproducible generator.
 
-## Design constraints
+## Core design constraints
 
-- No minute numbers outside the dial.
-- No Options menu or complex sidebar.
-- Tick marks remain fixed decoration, unrelated to duration.
-- Red sector is always proportional to **time remaining**.
-- The timer starts as a modest floating mini-window, not a full dashboard.
+The original simple red pie, black background and clear countdown have been preserved. Default single-clock mode stays compact; multi-clock features only appear as needed. The clock dashes remain decoration, and **never pretend that an arbitrary-duration timer is a 60-minute clock**.
 
-## Version
-
-Version 0.2.0 adds quick presets, keyboard spinner controls, saved window preferences, an end-of-time visual indicator, a custom application icon, and real Electron integration testing.
+Version **0.3.0**: Direction, color, alarms, repeating timers, independent multi-clock panels, flexible resizing, visual options and expanded integration tests.
