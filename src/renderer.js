@@ -46,6 +46,24 @@ const state = {
   sequence: 0
 };
 state.activeId = state.clocks[0].id;
+let clockOnly = false;
+
+function updateFocusTarget() {
+  for (const [id, refs] of tileRefs) {
+    refs.root.classList.toggle('focus-clock', id === state.activeId);
+  }
+}
+
+function setClockOnly(enabled) {
+  clockOnly = Boolean(enabled);
+  if (clockOnly) closeFileMenu();
+  $('app-shell').classList.toggle('clock-only', clockOnly);
+  $('focus-restore').hidden = !clockOnly;
+  $('clock-only').setAttribute('aria-pressed', String(clockOnly));
+  updateFocusTarget();
+  try { localStorage.setItem('clock-counter:clock-only', clockOnly ? 'true' : 'false'); } catch { /* optional preference */ }
+  action('set-focus-mode', { enabled: clockOnly });
+}
 
 function nextId() {
   let id;
@@ -75,6 +93,7 @@ function selectClock(id) {
   if (!getClock(id)) return;
   state.activeId = id;
   for (const [clockId, refs] of tileRefs) refs.root.classList.toggle('selected', clockId === id);
+  updateFocusTarget();
 }
 
 function changeClock(id, update, persist = false) {
@@ -318,6 +337,7 @@ function refreshBoard() {
 }
 
 function addClock(source = null) {
+  if (clockOnly) setClockOnly(false);
   if (state.clocks.length >= MAX_CLOCKS) { updateStatus('LIMIT: ' + MAX_CLOCKS + ' CLOCKS'); return; }
   const id = nextId();
   const options = source ? {
@@ -384,6 +404,7 @@ function syncColorSwatches() {
 }
 
 function openSettings(id) {
+  if (clockOnly) setClockOnly(false);
   if (!getClock(id)) return;
   closeFileMenu();
   state.settingsClockId = id;
@@ -458,6 +479,12 @@ function toggleFileMenu() {
   $('file-trigger').setAttribute('aria-expanded', String(!menu.hidden));
 }
 
+$('clock-only').addEventListener('click', () => setClockOnly(true));
+$('focus-restore').addEventListener('click', () => setClockOnly(false));
+$('menu-clock-only').addEventListener('click', () => setClockOnly(true));
+$('menu-timer-toggle').addEventListener('click', () => { closeFileMenu(); toggleClock(state.activeId); });
+$('menu-timer-reset').addEventListener('click', () => { closeFileMenu(); resetOne(state.activeId); });
+$('menu-timer-settings').addEventListener('click', () => { closeFileMenu(); openSettings(state.activeId); });
 $('file-trigger').addEventListener('click', toggleFileMenu);
 document.addEventListener('pointerdown', event => {
   if (!event.target.closest('.menu-wrap')) closeFileMenu();
@@ -484,16 +511,28 @@ for (const [id, command] of [
   ['window-minimize','minimize'], ['window-maximize','maximize'],['window-close','close']
 ]) $(id).addEventListener('click', () => action(command));
 
+$('menu-help').addEventListener('click', () => { closeFileMenu(); $('help-dialog').showModal(); });
 $('help-trigger').addEventListener('click', () => { closeFileMenu(); $('help-dialog').showModal(); });
 $('help-close').addEventListener('click', () => $('help-dialog').close());
 $('help-done').addEventListener('click', () => $('help-dialog').close());
 
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape') { closeFileMenu(); return; }
+  if (event.key === 'Escape') {
+    if (clockOnly && !$('help-dialog').open && !settings.open) {
+      event.preventDefault();
+      setClockOnly(false);
+    } else closeFileMenu();
+    return;
+  }
   if ($('help-dialog').open || settings.open) return;
   if (event.ctrlKey && event.key.toLowerCase() === 'n') { event.preventDefault(); addClock(); return; }
   const target = event.target;
   if (target instanceof HTMLElement && target.closest('input,select,textarea,[contenteditable="true"]')) return;
+  if (event.key.toLowerCase() === 'h' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    event.preventDefault();
+    setClockOnly(!clockOnly);
+    return;
+  }
   if (event.code === 'Space' && !(target instanceof HTMLElement && target.closest('button'))) {
     event.preventDefault(); toggleClock(state.activeId);
   }
@@ -533,4 +572,5 @@ grip.addEventListener('keydown', event => {
 });
 
 refreshBoard();
+if (localStorage.getItem('clock-counter:clock-only') === 'true') setClockOnly(true);
 updateStatus('READY — ' + state.clocks.length + ' CLOCK' + (state.clocks.length === 1 ? '' : 'S'));

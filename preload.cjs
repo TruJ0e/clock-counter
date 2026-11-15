@@ -9,7 +9,8 @@ const allowedActions = new Set([
   'toggle-always-on-top',
   'toggle-fullscreen',
   'resize-to',
-  'fit-clocks'
+  'fit-clocks',
+  'set-focus-mode'
 ]);
 
 contextBridge.exposeInMainWorld('clockCounterWindow', {

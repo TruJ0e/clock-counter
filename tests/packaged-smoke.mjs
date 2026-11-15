@@ -37,7 +37,17 @@ try {
   await clocks.nth(1).locator('.play-pause').click();
   assert.equal(await clocks.nth(1).getAttribute('data-running'),'true');
   assert.equal(await clocks.first().getAttribute('data-running'),'false');
-  console.log('PASS packaged CLOCK COUNTER.exe launches; multiple clocks, settings and controls work.');
+  await page.locator('#file-trigger').click();
+  await page.locator('#menu-timer-reset').click();
+  assert.equal(await clocks.nth(1).getAttribute('data-running'),'false');
+  assert.equal(await clocks.nth(1).locator('.time-readout').textContent(),'01:00');
+  await page.locator('#clock-only').click();
+  assert.equal(await page.locator('.menubar').isVisible(), false);
+  assert.equal(await clocks.first().isVisible(), false);
+  assert.equal(await clocks.nth(1).isVisible(), true);
+  await page.locator('#focus-restore').click();
+  assert.equal(await page.locator('.menubar').isVisible(), true);
+  console.log('PASS packaged CLOCK COUNTER.exe launches; timer menu, compact view, multiple clocks and settings work.');
 } finally {
   if (app) await app.close().catch(() => {});
   await fs.rm(profile, { recursive: true, force: true, maxRetries: 3 }).catch(() => {});

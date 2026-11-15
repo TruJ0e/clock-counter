@@ -219,7 +219,8 @@ try {
     await page.locator('#file-trigger').click();
     await page.locator('#menu-top').click();
     assert.equal(await win.evaluate(w=>w.isAlwaysOnTop()),true);
-    await page.locator('#help-trigger').click();
+    await page.locator('#file-trigger').click();
+    await page.locator('#menu-help').click();
     assert.equal(await page.locator('#help-dialog').isVisible(),true);
     await page.locator('#help-done').click();
     await page.keyboard.press('Control+n');

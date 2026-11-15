@@ -134,6 +134,17 @@ app.whenReady().then(() => {
       case 'toggle-fullscreen':
         win.setFullScreen(!win.isFullScreen());
         break;
+      case 'set-focus-mode': {
+        if (typeof payload?.enabled !== 'boolean') return;
+        // Clock-only mode permits an even smaller, clock-sized floating window.
+        const min = payload.enabled ? [180, 180] : [250, 260];
+        win.setMinimumSize(...min);
+        const [width, height] = win.getSize();
+        if (width < min[0] || height < min[1]) {
+          win.setSize(Math.max(width, min[0]), Math.max(height, min[1]));
+        }
+        break;
+      }
       case 'resize-to': {
         if (win.isFullScreen()) return;
         const display = screen.getDisplayMatching(win.getBounds()).workArea;

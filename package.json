@@ -1,6 +1,6 @@
 {
   "name": "clock-counter",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A compact retro visual countdown timer that makes the passage of time easy to understand.",
   "private": true,
   "type": "module",
@@ -13,8 +13,9 @@
     "dist:portable": "electron-builder --win portable",
     "test:e2e": "node tests/electron-e2e.mjs",
     "icon:build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-icon.ps1",
-    "verify": "npm test && npm run test:e2e",
-    "test:packaged": "node tests/packaged-smoke.mjs"
+    "verify": "npm test && npm run test:e2e && npm run test:focus",
+    "test:packaged": "node tests/packaged-smoke.mjs",
+    "test:focus": "node tests/focus-ui.mjs"
   },
   "devDependencies": {
     "electron": "^45.3.2",

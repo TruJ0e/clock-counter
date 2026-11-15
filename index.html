@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="./src/styles.css">
 </head>
 <body>
-  <div class="app-shell">
+  <div class="app-shell" id="app-shell">
     <header class="titlebar" aria-label="Window title bar">
       <svg class="brand-icon" viewBox="0 0 32 38" aria-hidden="true">
         <path d="M12 3h8M16 3v5M9 8h14M7 14l-3-3M25 14l3-3" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"/>
@@ -27,6 +27,11 @@
       <div class="menu-wrap">
         <button id="file-trigger" class="menu-trigger" aria-haspopup="true" aria-expanded="false" aria-controls="file-menu">File</button>
         <div class="dropdown" id="file-menu" hidden>
+          <div class="menu-heading">TIMER</div>
+          <button id="menu-timer-toggle">Start / pause selected <kbd>Space</kbd></button>
+          <button id="menu-timer-reset">Reset selected <kbd>R</kbd></button>
+          <button id="menu-timer-settings">Timer settings…</button>
+          <div class="dropdown-separator"></div>
           <button id="menu-new">New clock <kbd>Ctrl+N</kbd></button>
           <button id="menu-start-all">Start all clocks</button>
           <button id="menu-pause-all">Pause all clocks</button>
@@ -41,7 +46,9 @@
           </div>
           <div class="dropdown-separator"></div>
           <button id="menu-top" aria-pressed="false">Always on top <span id="top-check"></span></button>
+          <button id="menu-clock-only">Hide controls (clock only) <kbd>H</kbd></button>
           <button id="menu-fullscreen">Fullscreen <kbd>F</kbd></button>
+          <button id="menu-help">Help</button>
           <button id="menu-exit">Exit</button>
         </div>
       </div>
@@ -51,8 +58,11 @@
       <button id="all-pause" class="toolbar-button multi-only" title="Pause all clocks">Ⅱ All</button>
       <button id="all-reset" class="toolbar-button multi-only" title="Reset all clocks">↺ All</button>
       <button id="add-clock" class="toolbar-button add-clock" title="Add an independent clock (Ctrl+N)">+ <span class="add-label">Clock</span></button>
+      <button id="clock-only" class="toolbar-button clock-only-toggle" aria-label="Hide controls, show clock only" title="Clock only (H)">▣</button>
     </nav>
 
+    <button id="focus-restore" class="focus-restore" title="Show controls (H or Escape)" aria-label="Show controls" hidden>↗</button>
+    <div class="focus-drag" aria-hidden="true"></div>
     <main class="main-area">
       <div id="clock-board" class="clock-board single" aria-label="Countdown clocks"></div>
     </main>
@@ -156,7 +166,8 @@
     <p>Colored space means time remains. As time runs out, that color disappears. Decorative dashes do not represent minutes.</p>
     <p><b>+ Clock</b> creates an independent timer. Resize the window to place clocks side by side. Each has its own duration, direction, color, alarm, and repeat setting.</p>
     <p>Use the gear on a clock to change its options. Set hours, minutes, and seconds below the dial. Changing a duration resets that clock only.</p>
-    <p><b>Space</b>: Start/pause selected clock<br><b>R</b>: Reset selected clock<br><b>Ctrl+N</b>: New clock<br><b>F</b>: Fullscreen<br><b>Escape</b>: Close menu or dialog</p>
+    <p><b>Space</b>: Start/pause selected clock<br><b>R</b>: Reset selected clock<br><b>Ctrl+N</b>: New clock<br><b>F</b>: Fullscreen<br><b>H</b>: Clock-only mode / restore controls<br><b>Escape</b>: Restore controls or close menu/dialog</p>
+    <p><b>File → Timer</b> contains start/pause, reset and timer settings. Clock-only mode shows only your selected clock, without toolbars, while its timer continues to run.</p>
     <p>Clock settings are saved between launches. Active countdowns do not continue after the app has been closed.</p>
     <button id="help-done" class="panel-button primary">Close</button>
   </dialog>
