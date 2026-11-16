@@ -38,8 +38,10 @@ try{
   await page.locator('#library-done').click();
   const privateCode=await page.request.get(url+'main.cjs');
   const api=await page.request.post(url+'api/control');
+  const apiGet=await page.request.get(url+'api/control');
   assert.equal(privateCode.status(),404);
-  assert.equal(api.status(),404);
+  assert.equal(apiGet.status(),404);
+  assert.ok([404,405].includes(api.status()));
   // Filter only expected 404 browser console errors caused by negative tests.
   const unexpected=errors.filter(e=>!e.includes('404 (Not Found)'));
   console.log(JSON.stringify({
@@ -50,7 +52,7 @@ try{
     unexpectedBrowserErrors:unexpected,
     thirdPartyRequests:thirdParty,
     requestFailures:failed,
-    apiStatus:api.status(),sourceStatus:privateCode.status()
+    apiStatus:api.status(),apiGetStatus:apiGet.status(),sourceStatus:privateCode.status()
   },null,2));
   assert.deepEqual(unexpected,[]);
   assert.deepEqual(thirdParty,[]);

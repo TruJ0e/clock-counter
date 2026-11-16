@@ -50,10 +50,10 @@ const headers=[
   '  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), fullscreen=(self)',
   '  Cross-Origin-Resource-Policy: same-origin',
   '  Cross-Origin-Opener-Policy: same-origin',
-  '  Cache-Control: public, max-age=300',
+  '  Cache-Control: public, no-transform, max-age=300',
   '',
   '/index.html',
-  '  Cache-Control: no-cache',
+  '  Cache-Control: public, no-transform, max-age=0, must-revalidate',
   ''
 ].join('\n');
 fs.writeFileSync(path.join(dir,'_headers'),headers);
