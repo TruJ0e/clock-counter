@@ -1,91 +1,86 @@
 # CLOCK COUNTER
 
-A small, retro-style visual countdown utility for Windows. The **colored portion is the time remaining**. As a clock runs out, the color disappears; the twelve white dashes are optional decorative reference marks, not fixed minute markers. This keeps the timer understandable for people who find abstract time difficult to visualize.
+A retro Windows visual timer for people who benefit from **seeing** time instead of calculating it. The colored area of the round dial shows the amount of time remaining and disappears as time runs out. White clock dashes remain decorative; optional quarter-progress markers correspond to the actual duration. Black background, white outlines, red default face and sliding bottom controls remain the default appearance.
 
-CLOCK COUNTER works offline with no account, telemetry, paid API, or subscription.
+Version **0.4.0** adds configurable schedules, visual accessibility tools, offline alarms, saved presets and collections, floating clocks, system tray, backup/restore and optimized packaging. No account, telemetry, paid API or internet access is required.
 
-## Run
+## Run on Windows
 
-Windows development: install Node.js, open PowerShell in this repository and run:
+Build the portable executable using Node.js:
 
-```powershell
+~~~powershell
 npm install
-npm start
-```
-
-To create an independent Windows executable (Node.js not required on the recipient's PC):
-
-```powershell
 npm run dist:portable
-```
+~~~
 
-The executable is placed in `dist/CLOCK COUNTER 0.3.2.exe`. Windows installer builds are available with `npm run dist:win`. These personal builds are not code-signed; Windows SmartScreen may warn about an unknown publisher.
+Open dist/CLOCK COUNTER 0.4.0.exe. Recipients do not need Node.js. The unsigned build may prompt a Windows SmartScreen warning. Development: npm start. Installer build: npm run dist:win.
 
-## Features
+## Standard timer controls
 
-- **Clockwise or counterclockwise:** Choose the direction in each clock's settings. The visual always shows the correct fraction remaining for that clock's actual duration.
-- **Any color:** Nine built-in color presets plus a custom RGB color picker, independently per clock.
-- **Four built-in alarm tones:** Classic chime, beep, bell and retro digital; each clock can also be silent and has a separate volume.
-- **Continuous repeating:** Each clock can restart automatically when it reaches zero. The completed-round count is shown by that clock.
-- **Multiple clocks:** Add up to 12 independently timed clocks, each with its own title, duration, countdown direction, color, alarm, volume and repeat setting. They lay out in columns when window width allows.
-- **Resize:** Drag the lower-right corner to resize the frameless window, or use maximize/fullscreen. The standard minimum size is 250 × 260 pixels; clock-only mode supports 180 × 180. The title bar and File menu automatically shrink to remain proportional in narrow windows. The app widens when new clocks are added, as screen space permits.
-- **Clock-only mode:** Click the square button beside **+ Clock**, or choose **File > Hide controls**, to display only the selected clock's dial. The window title, menus, tile settings, and time input controls disappear while the timer keeps running. A small restore button appears in the top-right; **H** and **Escape** also restore the controls.
-- **Slide-up bottom controls:** Play/Pause, Reset, and the hours/minutes/seconds setters live in a small sliding drawer at the bottom of every clock. Pressing **Play** starts the timer and automatically slides that clock's controls down, leaving only a small **up arrow (▲)**. Click the arrow to slide the controls back up while the countdown continues; the **down arrow (▼)** hides them manually. Each clock's drawer operates independently. Starting all clocks slides away the drawers for all timers that actually start. The controls do not pop back up automatically when a timer pauses or finishes.
-- **Start/pause/reset:** Independently control each clock or use Start All, Pause All and Reset All from the toolbar (or File menu on narrow windows). Keyboard shortcuts and File > Timer remain available when a drawer is hidden.
-- **Quick presets:** 2, 5, 10, 15, 20, 30, 45 or 60 minutes via File > Quick Timers, applied only to the selected clock.
-- **Accessibility:** High contrast, descriptive labels, optional digital time and decorative marks, no flashing transitions, and keyboard shortcuts.
-- **Persistence:** Clock names, durations, colors, directions, alarms, repeat settings, volume, display options, window bounds and always-on-top preference are saved automatically.
+Click Play to start. The bottom controls automatically slide down, leaving a small up-arrow tab. Click the arrow to reveal Play/Pause, Reset and hours/minutes/seconds; the down arrow hides them. Each clock has its own drawer.
 
-Clocks continue counting accurately while the application is **open** and minimized or inactive. Closing CLOCK COUNTER stops all clocks; opening it again restores their saved settings with clocks stopped and reset to their configured durations. Repeating clocks do not generate an unbounded backlog of alarm sounds after a delayed update. At most one alarm is played per clock per update, even if several complete cycles were missed while the PC was asleep.
+Click the small square button near the top, or press H, for full clock-only mode; restore with the top-right button, H or Escape. Space starts/pauses the selected clock, R resets, Ctrl+N adds a clock and F toggles fullscreen. File > Timer includes these actions even with the bottom controls hidden.
 
-## Controls
+## All eighteen requested additions
 
-Each card has an editable name, a settings gear, an independently rotating colored countdown pie, and a slide-up bottom drawer containing hours/minutes/seconds fields, Start/Pause and Reset. Clocks can be duplicated or removed from the settings dialog.
+1. **Custom duration presets** — File > Presets & Collections saves named durations; they appear in File for quick use.
+2. **Preset collections** — Save multi-stage activity routines and complete multi-clock layouts with settings; reload them later.
+3. **Meaningful progress markers** — Optional marks at 75%, 50% and 25% remaining, with actual time values in tooltips.
+4. **Auto-hide numeric countdown** — Hide the digits while Play is active; leave the time pie visible.
+5. **Warning color transitions** — Independent warning/critical thresholds and colors for each clock.
+6. **Checkpoint alerts** — Optional sound and desktop notification when remaining time crosses selected percentages.
+7. **Custom audio imports** — Choose a local MP3, WAV or OGG file (up to 8 MB) as the clock alarm.
+8. **Persistent alarms** — Repeat alarms approximately every 3.5 seconds after the timer finishes until ACK or Reset.
+9. **Visual task labels** — Optional monochrome icons for reading, work, break, cleanup, study and movement.
+10. **Sequential activities** — Automatically progress through saved stages with names, durations, colors and pictograms; optionally loop.
+11. **Work/break schedule** — Configurable work minutes, short/long breaks and rounds; optionally repeat.
+12. **Overtime counter** — At zero, optionally count upward with a leading plus sign.
+13. **Stopwatch mode** — Count upward instead of down with an optional visual progress goal.
+14. **Floating clock windows** — Detach individual clocks into separate native Windows views; Play/Pause, Reset and ACK synchronize with the master timer.
+15. **Drag to reorder** — Drag each clock's handle to arrange multi-clock layouts.
+16. **Lock controls and layout** — File > Lock controls & layout prevents accidental edits and resizing until unlocked.
+17. **System tray** — Enable from File. Hide the main window while timers continue running; the tray menu can show, start all, pause all or quit.
+18. **Export/import setups** — Save a versioned JSON backup containing timers, presets, layouts, advanced settings and imported audio data. Import confirms before replacing active clocks and creates new audio IDs instead of overwriting existing files.
 
-- **File > Timer:** Start/pause, reset, and open settings for the selected timer. The File menu remains accessible even when its top bar becomes compact.
-- **Space:** Start/pause the selected clock (when not typing).
-- **R:** Reset the selected clock.
-- **Ctrl+N:** Add another independent clock.
-- **F:** Fullscreen.
-- **H:** Toggle clock-only mode. **Escape** also restores the controls when they are hidden.
-- **Arrow up/down:** Change a focused duration field.
-- **File:** Presets, multi-clock controls, always-on-top, fullscreen and exit.
-- **Help:** Built-in guide.
+## Timer modes
 
-Click a card to select it before using keyboard shortcuts or File > Quick Timers. Audio previews are in the clock settings dialog.
+Open the gear button on a clock. The Timer type menu offers Countdown, Stopwatch, Activity sequence or Work/break schedule. In Activity sequence mode, select a collection saved under File > Presets & Collections. Work/break mode has its own minutes and rounds fields.
 
-## Development and tests
+Timers use absolute deadlines while the app remains open, including when hidden in the tray. System sleep or delayed rendering does not accumulate drift. Closing the app entirely stops timers, and reopening restores settings but does not automatically restart countdowns.
 
-```powershell
-npm test               # Pure timer model and sound-pattern tests
-npm run test:e2e       # Real Electron UI tests in an isolated profile
-npm run test:focus     # Compact-menu and clock-only UI regression tests
-npm run test:drawer    # Sliding per-clock bottom drawer UI regression tests
-npm run verify         # All suites
-npm run dist:portable  # Build Windows portable EXE
-npm run test:packaged  # Smoke-test the packaged Electron app
-```
+## Privacy and security
 
-End-to-end tests (including compact-window and sliding drawer tests) exercise: independent timers, opposite countdown directions, repeat timing and phase recovery, color/sound preferences, hide/show options, timer duplication/deletion, quick presets, global controls, very small/large windows, manual resize, settings persistence and completion behavior. Test profiles do not touch your regular CLOCK COUNTER settings.
+All activity runs locally. Native operations are exposed through a restricted, sandboxed Electron bridge. Imported setup JSON is validated before replacing clocks. Audio IDs, extensions and file sizes are checked. Setups are limited to 34 MB with up to 24 MB decoded audio. The backup embeds imported audio if present, so restored presets and custom sounds can be moved to another Windows computer. Untrusted audio cannot run code in this application; it is passed to the local media decoder. No data is uploaded unless you explicitly share it.
 
-## Architecture
+## Build optimization
 
-- `main.cjs`: Native Electron window, window state persistence and tightly constrained window-control IPC.
-- `preload.cjs`: Isolated, allowlisted bridge for window controls.
-- `index.html`, `src/styles.css`: Retro black mini-window UI with responsive side-by-side cards and settings dialogs.
-- `src/renderer.js`: Independent card views, input handling, scheduling, sound triggers and preference persistence.
-- `src/clocks.js`: Pure, immutable multi-clock state operations and missed-cycle repeat math.
-- `src/timer-core.js`: Time math and formatting independent of Electron.
-- `src/alarms.js`: Built-in generated offline alarm tones.
-- `tests/`: Pure unit tests, Electron UI tests, packaged executable smoke test.
-- `assets/icon.ico`, `scripts/generate-icon.ps1`: Application icon and reproducible generator.
+The Windows portable build uses maximum executable compression and removes unused Electron locale resources, retaining English locale packs. Required runtime libraries, graphics code, media codecs, ICU data, and license files are preserved. Electron still has a significant base size. A separate Tauri/WebView2 migration could reduce it further, but would require retesting native tray, audio, file dialogs and floating windows.
 
-## Core design constraints
+## Automated verification
 
-The original simple red pie, black background and clear countdown have been preserved. Default single-clock mode stays compact; multi-clock features only appear as needed. The clock dashes remain decoration, and **never pretend that an arbitrary-duration timer is a 60-minute clock**.
+~~~powershell
+npm test                # Pure timer, sequence, stopwatch, checkpoint and backup tests
+npm run test:e2e        # Existing multi-clock desktop integration tests
+npm run test:focus      # Tiny window and clock-only interface
+npm run test:drawer     # Slide-down controls and independent drawers
+npm run test:advanced   # Presets, activities, warnings, floating clocks, tray, lock
+npm run test:files      # Native audio import and setup export/import dialogs
+npm run verify          # Every source and Electron test suite
+npm run dist:portable   # Build optimized portable executable
+npm run test:packaged   # Test the actual packaged Windows binary
+~~~
 
-Version **0.3.0**: Direction, color, alarms, repeating timers, independent multi-clock panels, flexible resizing, visual options and expanded integration tests.
+Test profiles are isolated from everyday CLOCK COUNTER settings.
 
-Version **0.3.1**: File > Timer commands, adaptive compact title/menu bars, and clock-only view with a restore button, H/Escape shortcuts, and an extra-small minimum window size. All modes are tested with real Electron windows.
+## Project structure
 
-Version **0.3.2**: A compact bottom drawer for Play/Pause, Reset and time setting. Press Play to auto-collapse the drawer; the up-arrow reopens it, the down-arrow hides it. Multi-clock drawers remain independent, full clock-only mode still works, and all behaviors have real Electron regression coverage.
+- main.cjs — secure native window management, tray, dialogs, sound storage and backup integration.
+- preload.cjs — allowlisted renderer bridge.
+- index.html, src/styles.css — retro interface and settings.
+- src/renderer.js — UI interactions, alerts, presets, schedules, locking and synchronization.
+- src/clocks.js — immutable countdown, stopwatch, overtime, work/break and sequence logic.
+- src/library.js — presets, collections and versioned backup validation.
+- src/timer-core.js, src/alarms.js — formatting, math and synthesized local tones.
+- detached.html, src/detached.js — independent floating clock views.
+- scripts/after-pack.cjs — package locale pruning.
+- tests — unit, end-to-end UI, native-file and packaged-app smoke tests.

@@ -56,7 +56,21 @@ try {
   assert.equal(await clocks.nth(1).isVisible(), true);
   await page.locator('#focus-restore').click();
   assert.equal(await page.locator('.menubar').isVisible(), true);
-  console.log('PASS packaged CLOCK COUNTER.exe launches; timer menu, slide-up timer controls, compact view, multiple clocks and settings work.');
+  await clocks.first().locator('.tile-settings').click();
+  await page.locator('#setting-mode').selectOption('stopwatch');
+  await page.locator('#done-settings').click();
+  assert.equal(await clocks.first().getAttribute('data-mode'),'stopwatch');
+  await clocks.first().locator('.detach-clock').click();
+  await page.waitForTimeout(350);
+  const floating=app.windows().find(w=>w!==page&&w.url().includes('detached.html'));
+  assert.ok(floating,'packaged app must include its floating-window resources');
+  await floating.locator('#float-readout').waitFor();
+  await floating.locator('#float-close').click();
+  await page.locator('#file-trigger').click();
+  await page.locator('#menu-library').click();
+  assert.equal(await page.locator('#library-dialog').isVisible(),true);
+  await page.locator('#library-done').click();
+  console.log('PASS packaged CLOCK COUNTER.exe launches; multi-clock controls, stopwatch, native floating window and preset library work.');
 } finally {
   if (app) await app.close().catch(() => {});
   await fs.rm(profile, { recursive: true, force: true, maxRetries: 3 }).catch(() => {});

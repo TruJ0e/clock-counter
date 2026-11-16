@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:; object-src 'none'; base-uri 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:; object-src 'none'; media-src 'self' data: blob:; base-uri 'none'">
   <meta name="theme-color" content="#050505">
   <title>CLOCK COUNTER</title>
   <link rel="stylesheet" href="./src/styles.css">
@@ -33,6 +33,14 @@
           <button id="menu-timer-settings">Timer settings…</button>
           <div class="dropdown-separator"></div>
           <button id="menu-new">New clock <kbd>Ctrl+N</kbd></button>
+          <button id="menu-detach">Detach selected into window</button>
+          <button id="menu-library">Presets &amp; collections…</button>
+          <button id="menu-export">Export setup…</button>
+          <button id="menu-import">Import setup…</button>
+          <div class="dropdown-separator"></div>
+          <button id="menu-lock">Lock controls &amp; layout <span id="lock-check"></span></button>
+          <button id="menu-tray">Enable system tray <span id="tray-check"></span></button>
+          <button id="menu-hide-tray">Hide window to tray</button>
           <button id="menu-start-all">Start all clocks</button>
           <button id="menu-pause-all">Pause all clocks</button>
           <button id="menu-reset-all">Reset all clocks</button>
@@ -44,6 +52,7 @@
             <button data-preset="1200">20m</button><button data-preset="1800">30m</button>
             <button data-preset="2700">45m</button><button data-preset="3600">60m</button>
           </div>
+          <div id="custom-preset-menu" class="custom-preset-menu" hidden></div>
           <div class="dropdown-separator"></div>
           <button id="menu-top" aria-pressed="false">Always on top <span id="top-check"></span></button>
           <button id="menu-clock-only">Hide controls (clock only) <kbd>H</kbd></button>
@@ -78,17 +87,24 @@
       <header class="clock-heading">
         <div class="clock-name-wrap">
           <span class="select-mark" aria-hidden="true">◆</span>
+          <span class="task-symbol" aria-hidden="true" hidden></span>
           <input class="clock-name" type="text" maxlength="36" autocomplete="off" aria-label="Clock name">
         </div>
+        <span class="step-label" hidden></span>
         <span class="cycle-count" hidden></span>
+        <button class="ack-alarm" hidden aria-label="Acknowledge alarm" title="Stop repeating alarm">ACK</button>
+        <button class="drag-handle multi-only" draggable="true" aria-label="Drag to reorder clock" title="Drag to reorder">⋮⋮</button>
+        <button class="detach-clock" aria-label="Detach clock to floating window" title="Detach to floating window">□</button>
         <button class="tile-settings" title="Direction, color, alarm, and repeat" aria-label="Clock settings">⚙</button>
         <button class="tile-remove multi-only" title="Remove clock" aria-label="Remove clock">×</button>
       </header>
       <div class="dial-space">
         <div class="dial" role="img" aria-label="Timer face">
           <svg class="dial-markings" viewBox="0 0 400 400" aria-hidden="true" focusable="false"></svg>
+          <svg class="progress-markings" viewBox="0 0 400 400" aria-hidden="true" focusable="false" hidden></svg>
           <output class="time-readout" role="timer" aria-label="Time remaining">30:00</output>
           <span class="time-up" hidden>TIME UP</span>
+          <span class="mode-readout" hidden></span>
         </div>
       </div>
       <div class="controls-drawer" data-collapsed="false">
@@ -146,6 +162,7 @@
         <option value="beep">Single beep</option>
         <option value="bell">Bell</option>
         <option value="digital">Retro digital</option>
+        <option value="custom">Imported audio file</option>
         <option value="off">Silent</option>
       </select>
     </label>
@@ -158,12 +175,114 @@
     <label class="check-setting"><input id="setting-repeat" type="checkbox"> Repeat continuously</label>
     <label class="check-setting"><input id="setting-show-time" type="checkbox" checked> Show numeric time</label>
     <label class="check-setting"><input id="setting-show-ticks" type="checkbox" checked> Show decorative dashes</label>
+
+    <fieldset class="advanced-section">
+      <legend>Timer type</legend>
+      <label class="settings-field">Mode
+        <select id="setting-mode">
+          <option value="countdown">Countdown</option>
+          <option value="stopwatch">Stopwatch (count up)</option>
+          <option value="sequence">Activity sequence</option>
+          <option value="workbreak">Work / break schedule</option>
+        </select>
+      </label>
+      <label class="settings-field" id="stopwatch-goal-field" hidden>Stopwatch goal (minutes)
+        <input id="setting-stopwatch-goal" type="number" min="1" max="5999" value="30">
+      </label>
+      <div id="sequence-options" hidden>
+        <label class="settings-field">Saved sequence collection
+          <select id="setting-sequence"></select>
+        </label>
+        <button id="open-sequence-library" class="panel-button">Edit collections…</button>
+        <label class="check-setting"><input id="setting-sequence-repeat" type="checkbox"> Repeat entire sequence</label>
+      </div>
+      <div id="workbreak-options" hidden>
+        <div class="work-grid">
+          <label>Work (min)<input id="setting-work-min" type="number" min="1" max="999" value="25"></label>
+          <label>Break (min)<input id="setting-break-min" type="number" min="1" max="999" value="5"></label>
+          <label>Long break<input id="setting-long-min" type="number" min="1" max="999" value="15"></label>
+          <label>Rounds<input id="setting-rounds" type="number" min="1" max="12" value="4"></label>
+        </div>
+        <label class="check-setting"><input id="setting-work-repeat" type="checkbox"> Repeat the schedule</label>
+      </div>
+    </fieldset>
+    <fieldset class="advanced-section">
+      <legend>Visual accessibility</legend>
+      <label class="settings-field">Task picture
+        <select id="setting-task-icon">
+          <option value="none">None</option>
+          <option value="reading">Reading</option>
+          <option value="work">Work</option>
+          <option value="break">Break</option>
+          <option value="cleanup">Cleanup</option>
+          <option value="study">Study</option>
+          <option value="exercise">Exercise</option>
+        </select>
+      </label>
+      <label class="check-setting"><input id="setting-progress-markers" type="checkbox"> Meaningful quarter/half progress marks</label>
+      <label class="check-setting"><input id="setting-hide-on-play" type="checkbox"> Hide digital time automatically when playing</label>
+      <label class="check-setting"><input id="setting-warning" type="checkbox"> Change colors as time runs low</label>
+      <div class="work-grid">
+        <label>Warning at %<input id="setting-warning-percent" type="number" min="1" max="99" value="25"></label>
+        <label>Warning color<input id="setting-warning-color" type="color" value="#FFD23F"></label>
+        <label>Critical at %<input id="setting-critical-percent" type="number" min="1" max="99" value="10"></label>
+        <label>Critical color<input id="setting-critical-color" type="color" value="#F20B14"></label>
+      </div>
+      <label class="check-setting"><input id="setting-checkpoints" type="checkbox"> Sound and notify at time checkpoints</label>
+      <label class="settings-field">Checkpoint percentages (remaining)
+        <input id="setting-checkpoint-values" type="text" maxlength="24" value="50,25,10" placeholder="50,25,10">
+      </label>
+      <label class="check-setting"><input id="setting-overtime" type="checkbox"> After zero, count upward in overtime</label>
+    </fieldset>
+    <fieldset class="advanced-section">
+      <legend>Alarm behavior</legend>
+      <label class="check-setting"><input id="setting-persistent" type="checkbox"> Keep sounding until acknowledged</label>
+      <button id="import-custom-sound" class="panel-button">Import MP3 / WAV / OGG…</button>
+      <span id="custom-sound-status" class="settings-help">No custom sound selected</span>
+    </fieldset>
+
     <p class="settings-help">Changes apply to this clock only. Every clock counts down independently.</p>
     <div class="dialog-actions">
       <button id="duplicate-clock" class="panel-button">Duplicate</button>
       <button id="delete-clock" class="panel-button danger">Remove</button>
       <button id="done-settings" class="panel-button primary">Done</button>
     </div>
+  </dialog>
+
+
+  <dialog id="library-dialog" class="settings-dialog library-dialog" aria-labelledby="library-heading">
+    <div class="dialog-header">
+      <h2 id="library-heading">PRESETS &amp; COLLECTIONS</h2>
+      <button id="library-close" class="close-dialog" aria-label="Close preset library">×</button>
+    </div>
+    <fieldset class="advanced-section">
+      <legend>Custom duration presets</legend>
+      <label class="settings-field">Preset name<input id="preset-name" type="text" maxlength="42" placeholder="Reading time"></label>
+      <label class="settings-field">Minutes<input id="preset-minutes" type="number" min="1" max="5999" value="10"></label>
+      <button id="preset-save" class="panel-button primary">Save duration preset</button>
+      <div id="presets-list" class="library-list"></div>
+    </fieldset>
+    <fieldset class="advanced-section">
+      <legend>Sequential activity collection</legend>
+      <label class="settings-field">Collection name<input id="collection-name" type="text" maxlength="42" placeholder="Morning routine"></label>
+      <div class="work-grid">
+        <label>Activity name<input id="step-name" type="text" maxlength="30" placeholder="Reading"></label>
+        <label>Minutes<input id="step-minutes" type="number" min="1" max="999" value="5"></label>
+        <label>Color<input id="step-color" type="color" value="#F20B14"></label>
+        <label>Type<select id="step-icon"><option value="none">None</option><option value="reading">Reading</option><option value="work">Work</option><option value="break">Break</option><option value="cleanup">Cleanup</option><option value="study">Study</option><option value="exercise">Exercise</option></select></label>
+      </div>
+      <button id="step-add" class="panel-button">Add activity step</button>
+      <div id="steps-list" class="library-list"></div>
+      <button id="collection-save" class="panel-button primary">Save activity collection</button>
+    </fieldset>
+    <fieldset class="advanced-section">
+      <legend>Clock layout collection</legend>
+      <p class="settings-help">Save all current clocks as a reusable group. Each clock keeps its own duration and settings.</p>
+      <label class="settings-field">Layout name<input id="layout-name" type="text" maxlength="42" placeholder="Classroom clocks"></label>
+      <button id="layout-save" class="panel-button">Save clock layout</button>
+    </fieldset>
+    <div id="collections-list" class="library-list"></div>
+    <div class="dialog-actions"><button id="library-done" class="panel-button primary">Done</button></div>
   </dialog>
 
   <dialog id="help-dialog" class="settings-dialog help-dialog" aria-labelledby="help-heading">

@@ -1,7 +1,7 @@
 {
   "name": "clock-counter",
-  "version": "0.3.2",
-  "description": "A compact retro visual countdown timer that makes the passage of time easy to understand.",
+  "version": "0.4.0",
+  "description": "A retro, accessible multi-clock visual timer with presets, schedules, offline alarms, and floating windows.",
   "private": true,
   "type": "module",
   "main": "main.cjs",
@@ -13,10 +13,12 @@
     "dist:portable": "electron-builder --win portable",
     "test:e2e": "node tests/electron-e2e.mjs",
     "icon:build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-icon.ps1",
-    "verify": "npm test && npm run test:e2e && npm run test:focus && npm run test:drawer",
+    "verify": "npm test && npm run test:e2e && npm run test:focus && npm run test:drawer && npm run test:advanced && npm run test:files",
     "test:packaged": "node tests/packaged-smoke.mjs",
     "test:focus": "node tests/focus-ui.mjs",
-    "test:drawer": "node tests/drawer-ui.mjs"
+    "test:drawer": "node tests/drawer-ui.mjs",
+    "test:advanced": "node tests/advanced-ui.mjs",
+    "test:files": "node tests/file-operations.mjs"
   },
   "devDependencies": {
     "electron": "^45.3.2",
@@ -25,7 +27,7 @@
   },
   "build": {
     "appId": "com.trujoe.clockcounter",
-    "compression": "normal",
+    "compression": "maximum",
     "productName": "CLOCK COUNTER",
     "directories": {
       "output": "dist"
@@ -36,7 +38,8 @@
       "index.html",
       "src/**/*",
       "package.json",
-      "assets/**/*"
+      "assets/**/*",
+      "detached.html"
     ],
     "win": {
       "target": [
@@ -58,7 +61,8 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
-    }
+    },
+    "afterPack": "./scripts/after-pack.cjs"
   },
   "author": "TruJ0e"
 }
