@@ -4,6 +4,7 @@ const {app,BrowserWindow,ipcMain,screen,Tray,Menu,dialog,Notification} = require
 const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
+const {createUpdateManager}=require('./src/update-manager.cjs');
 
 if(process.env.CLOCK_COUNTER_TEST_PROFILE) {
   fs.mkdirSync(process.env.CLOCK_COUNTER_TEST_PROFILE,{recursive:true});
@@ -18,6 +19,7 @@ let tray=null;
 let trayEnabled=false;
 let isQuitting=false;
 let layoutLocked=false;
+let updates=null;
 
 function settingsPath(){return path.join(app.getPath('userData'),'window-state.json');}
 function readSettings(){
@@ -113,6 +115,7 @@ function createWindow(){
     mainWindow.show();
     mainWindow.webContents.send('clock-counter:always-on-top',mainWindow.isAlwaysOnTop());
     mainWindow.webContents.send('clock-counter:native-state',{trayEnabled,locked:layoutLocked});
+    if(updates)mainWindow.webContents.send('clock-counter:update-status',updates.getStatus());
   });
   mainWindow.on('close',event=>{
     saveWindowState(mainWindow);
@@ -179,6 +182,31 @@ app.whenReady().then(()=>{
   layoutLocked=saved.locked===true;
   createWindow();
   if(trayEnabled)setTrayEnabled(true);
+
+  // Only the installed NSIS build can automatically replace its executable.
+  // Portable files, test profiles and developer builds never execute updates.
+  const updateEnabled=app.isPackaged&&process.platform==='win32'&&
+    !process.env.CLOCK_COUNTER_TEST_PROFILE&&
+    !process.env.PORTABLE_EXECUTABLE_FILE&&
+    !process.env.PORTABLE_EXECUTABLE_DIR;
+  updates=createUpdateManager({
+    enabled:updateEnabled,
+    updater:updateEnabled?require('electron-updater').autoUpdater:null,
+    stateFile:path.join(app.getPath('userData'),'update-state.json'),
+    notify:status=>{
+      if(mainWindow&&!mainWindow.isDestroyed()&&!mainWindow.webContents.isDestroyed())
+        mainWindow.webContents.send('clock-counter:update-status',status);
+    }
+  });
+  updates.start();
+  ipcMain.handle('clock-counter:check-for-updates',async event=>{
+    if(!canUseFile(BrowserWindow.fromWebContents(event.sender)))return {phase:'unavailable'};
+    return updates.check({manual:true});
+  });
+  ipcMain.handle('clock-counter:get-update-status',async event=>{
+    if(!canUseFile(BrowserWindow.fromWebContents(event.sender)))return {phase:'unavailable'};
+    return updates.getStatus();
+  });
 
   ipcMain.on('clock-counter:window',(event,action,payload)=>{
     const win=BrowserWindow.fromWebContents(event.sender);

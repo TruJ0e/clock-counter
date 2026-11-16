@@ -1,7 +1,7 @@
 {
   "name": "clock-counter",
-  "version": "0.4.0",
-  "description": "A retro, accessible multi-clock visual timer with presets, schedules, offline alarms, and floating windows.",
+  "version": "0.5.0",
+  "description": "TruTimeClock desktop app with multi-timers, offline presets, weekly secure updates, and Cloudflare website.",
   "private": true,
   "type": "module",
   "main": "main.cjs",
@@ -13,7 +13,7 @@
     "dist:portable": "electron-builder --win portable",
     "test:e2e": "node tests/electron-e2e.mjs",
     "icon:build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-icon.ps1",
-    "verify": "npm test && npm run test:e2e && npm run test:focus && npm run test:drawer && npm run test:advanced && npm run test:files && npm run test:web-lite",
+    "verify": "npm test && npm run test:e2e && npm run test:focus && npm run test:drawer && npm run test:advanced && npm run test:files && npm run test:update-ui && npm run test:web-lite && npm run test:ttc",
     "test:packaged": "node tests/packaged-smoke.mjs",
     "test:focus": "node tests/focus-ui.mjs",
     "test:drawer": "node tests/drawer-ui.mjs",
@@ -24,7 +24,10 @@
     "build:ttc": "node scripts/build-ttc-site.cjs",
     "test:ttc": "npm run build:ttc && node tests/ttc-site.mjs",
     "audit:public": "node scripts/audit-public.cjs",
-    "test:ttc:live": "node tests/ttc-live.mjs"
+    "test:ttc:live": "node tests/ttc-live.mjs",
+    "build:release": "electron-builder --win nsis --publish never",
+    "test:updates": "node --test tests/update-manager.test.js",
+    "test:update-ui": "node tests/update-ui.mjs"
   },
   "devDependencies": {
     "electron": "^45.3.2",
@@ -66,9 +69,22 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "TruTimeClock-Setup-${version}.${ext}",
+      "perMachine": false
     },
-    "afterPack": "./scripts/after-pack.cjs"
+    "afterPack": "./scripts/after-pack.cjs",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "TruJ0e",
+        "repo": "clock-counter",
+        "releaseType": "release"
+      }
+    ]
   },
-  "author": "TruJ0e"
+  "author": "TruJ0e",
+  "dependencies": {
+    "electron-updater": "6.8.12"
+  }
 }

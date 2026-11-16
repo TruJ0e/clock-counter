@@ -463,3 +463,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   .tile-settings,.tile-remove{flex-basis:17px;}
   .cycle-count,.step-label{font-size:8px;}
 }
+/* Website download and installed desktop update share the compact top navigation. */
+#update-trigger, .download-trigger {white-space:nowrap;}
+#update-trigger:disabled {opacity:.75;cursor:progress;}
+a.download-trigger {display:inline-flex;align-items:center;padding:0 6px;font-size:17px;color:var(--paper);text-decoration:none;}
+a.download-trigger:hover {background:#303030;}
+a.download-trigger:focus-visible {outline:2px solid var(--green);outline-offset:-2px;}
+@media(max-width:385px) {#update-trigger,a.download-trigger {font-size:12px;padding:0 3px;}}

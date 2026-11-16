@@ -471,11 +471,18 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   .tile-settings,.tile-remove{flex-basis:17px;}
   .cycle-count,.step-label{font-size:8px;}
 }
+/* Website download and installed desktop update share the compact top navigation. */
+#update-trigger, .download-trigger {white-space:nowrap;}
+#update-trigger:disabled {opacity:.75;cursor:progress;}
+a.download-trigger {display:inline-flex;align-items:center;padding:0 6px;font-size:17px;color:var(--paper);text-decoration:none;}
+a.download-trigger:hover {background:#303030;}
+a.download-trigger:focus-visible {outline:2px solid var(--green);outline-offset:-2px;}
+@media(max-width:385px) {#update-trigger,a.download-trigger {font-size:12px;padding:0 3px;}}
 
 
     .window-controls,.clock-only-toggle+.browser-only-hide { display:none!important; }
     #window-minimize,#window-maximize,#window-close,
-    #menu-top,#menu-tray,#menu-hide-tray,#menu-detach,#menu-exit,
+    #menu-top,#menu-tray,#menu-hide-tray,#menu-detach,#menu-exit,#update-trigger,
     .detach-clock,.resize-grip { display:none!important; }
     .status-hint{display:none}
     .titlebar{-webkit-app-region:no-drag}
@@ -536,6 +543,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         </div>
       </div>
       <button id="help-trigger" class="menu-trigger">Help</button>
+      <button id="update-trigger" class="menu-trigger" type="button" title="Check GitHub releases for a newer installed version">Update</button>
       <div class="nav-fill"></div>
       <button id="all-start" class="toolbar-button multi-only" title="Start all stopped clocks">▶ All</button>
       <button id="all-pause" class="toolbar-button multi-only" title="Pause all clocks">Ⅱ All</button>
@@ -2558,6 +2566,37 @@ for (const [id, command] of [
 
 $('menu-help').addEventListener('click', () => { closeFileMenu(); $('help-dialog').showModal(); });
 $('help-trigger').addEventListener('click', () => { closeFileMenu(); $('help-dialog').showModal(); });
+
+const updateButton=$('update-trigger');
+function displayUpdateStatus(info){
+  if(!updateButton||!info||typeof info.phase!=='string')return;
+  const busy=info.phase==='checking'||info.phase==='downloading';
+  updateButton.textContent=info.phase==='ready'?'Update ready':
+    info.phase==='downloading'?'Updating…':busy?'Checking…':'Update';
+  updateButton.disabled=busy;
+  if(info.message) {
+    updateButton.title=info.message;
+    updateStatus(String(info.message).slice(0,100));
+  }
+}
+updateButton?.addEventListener('click',async()=>{
+  if(!desktop?.checkForUpdates){
+    updateStatus('Updates require the Windows installer');
+    return;
+  }
+  displayUpdateStatus({phase:'checking',message:'CHECKING FOR UPDATES'});
+  try{
+    const result=await desktop.checkForUpdates();
+    if(result)displayUpdateStatus(result);
+  }catch{
+    displayUpdateStatus({phase:'error',message:'UPDATE CHECK FAILED — TRY AGAIN'});
+  }
+});
+desktop?.onUpdateStatus?.(displayUpdateStatus);
+desktop?.getUpdateStatus?.().then(info=>{
+  if(info&&info.phase!=='idle'&&info.phase!=='unavailable')displayUpdateStatus(info);
+}).catch(()=>{});
+
 $('help-close').addEventListener('click', () => $('help-dialog').close());
 $('help-done').addEventListener('click', () => $('help-dialog').close());
 

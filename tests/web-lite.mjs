@@ -19,6 +19,8 @@ try{
   await page.goto(pathToFileURL(file).href);
   await page.locator('.clock-tile').first().waitFor({timeout:12000});
   assert.equal(await page.title(),'CLOCK COUNTER — Browser Edition');
+  assert.equal(await page.locator('#update-trigger').isVisible(),false);
+
   assert.equal(await page.locator('.time-readout').first().textContent(),'30:00');
   await page.locator('#add-clock').click();
   assert.equal(await page.locator('.clock-tile').count(),2);

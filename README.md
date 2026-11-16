@@ -2,7 +2,7 @@
 
 A retro Windows visual timer for people who benefit from **seeing** time instead of calculating it. The colored area of the round dial shows the amount of time remaining and disappears as time runs out. White clock dashes remain decorative; optional quarter-progress markers correspond to the actual duration. Black background, white outlines, red default face and sliding bottom controls remain the default appearance.
 
-Version **0.4.0** adds configurable schedules, visual accessibility tools, offline alarms, saved presets and collections, floating clocks, system tray, backup/restore and optimized packaging. No account, telemetry, paid API or internet access is required.
+Version **0.5.0** adds installed-app automatic updates on top of the v0.4.0 configurable schedules, visual accessibility tools, offline alarms, saved presets and collections, floating clocks, system tray, backup/restore and optimized packaging. No account, telemetry, paid API or internet access is required.
 
 ## TruTimeClock public website
 
@@ -17,6 +17,18 @@ To refresh the static site from the tested browser edition, run `npm run build:t
 For sharing with someone who just needs the timer, **CLOCK COUNTER Web Lite** is available as one self-contained HTML file (about 117 KB), or a ZIP download of about **29 KB**. It opens in an existing browser, requires no installation, works offline, and preserves the retro timer UI and most timer features. It cannot provide native Windows tray, always-on-top, or separate native floating-window functionality.
 
 Build it with npm run build:web-lite, test it with npm run test:web-lite, or open web-lite/CLOCK COUNTER WEB LITE.html directly. Full usage details and limitations are in web-lite/README.md. The full-featured Windows executable is still the best choice for system-tray operation and native desktop behavior.
+
+## Website download and desktop updates (v0.5.0)
+
+Visit **https://ttc.trujoedigital.com/** and select **Download** directly to the right of **Help** to download the Windows x64 desktop installer from an official, public GitHub release. The link points directly to the installer executable, not a page requiring a GitHub account.
+
+In the **installed Windows app**, this top-menu control reads **Update**. Clicking it forces an immediate check of the official **TruJ0e/clock-counter** GitHub releases, even if an automatic check ran recently. The status bar reports whether it is up to date, downloading, ready, or could not connect. The update check also runs automatically at startup when due, and every seven days while the app is running. A failed scheduled check is retried after one hour if the app remains open.
+
+Updates are downloaded automatically and verified against SHA-512 metadata from the same GitHub release. The updater applies the downloaded installer **when you quit the app normally**, preserving active countdowns rather than forcibly restarting the application. If it is hidden in the system tray, use the tray's **Quit** command; just closing the window may hide the app instead. You can then reopen it with the newest version installed.
+
+**The installed NSIS app is required for automatic installation.** Existing v0.4.0 portable copies and the stand-alone browser/HTML versions do not become self-updating; install v0.5.0 from the website to get the integrated updater. Updates can only be checked while the desktop application is running.
+
+**Signing and trust:** The installer is not yet Authenticode-signed, so Windows may warn about an unknown publisher. GitHub HTTPS and SHA-512 metadata integrity checks help detect transfer corruption or substitution, but they are not a replacement for a trusted Windows code-signing certificate. Automatic updates trust the configured GitHub release publisher account; protect that account with strong multi-factor authentication. The website itself exposes no API to the local computer, and browser-page scripts still cannot make network connections.
 
 ## Run on Windows
 

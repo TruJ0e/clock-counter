@@ -1149,6 +1149,37 @@ for (const [id, command] of [
 
 $('menu-help').addEventListener('click', () => { closeFileMenu(); $('help-dialog').showModal(); });
 $('help-trigger').addEventListener('click', () => { closeFileMenu(); $('help-dialog').showModal(); });
+
+const updateButton=$('update-trigger');
+function displayUpdateStatus(info){
+  if(!updateButton||!info||typeof info.phase!=='string')return;
+  const busy=info.phase==='checking'||info.phase==='downloading';
+  updateButton.textContent=info.phase==='ready'?'Update ready':
+    info.phase==='downloading'?'Updating…':busy?'Checking…':'Update';
+  updateButton.disabled=busy;
+  if(info.message) {
+    updateButton.title=info.message;
+    updateStatus(String(info.message).slice(0,100));
+  }
+}
+updateButton?.addEventListener('click',async()=>{
+  if(!desktop?.checkForUpdates){
+    updateStatus('Updates require the Windows installer');
+    return;
+  }
+  displayUpdateStatus({phase:'checking',message:'CHECKING FOR UPDATES'});
+  try{
+    const result=await desktop.checkForUpdates();
+    if(result)displayUpdateStatus(result);
+  }catch{
+    displayUpdateStatus({phase:'error',message:'UPDATE CHECK FAILED — TRY AGAIN'});
+  }
+});
+desktop?.onUpdateStatus?.(displayUpdateStatus);
+desktop?.getUpdateStatus?.().then(info=>{
+  if(info&&info.phase!=='idle'&&info.phase!=='unavailable')displayUpdateStatus(info);
+}).catch(()=>{});
+
 $('help-close').addEventListener('click', () => $('help-dialog').close());
 $('help-done').addEventListener('click', () => $('help-dialog').close());
 

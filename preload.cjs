@@ -27,5 +27,8 @@ contextBridge.exposeInMainWorld('clockCounterWindow',{
   readSound(id){return ipcRenderer.invoke('clock-counter:read-sound',id);},
   exportSetup(data){return ipcRenderer.invoke('clock-counter:export-setup',data);},
   importSetup(){return ipcRenderer.invoke('clock-counter:import-setup');},
-  installSounds(assets){return ipcRenderer.invoke('clock-counter:install-sounds',assets);}
+  installSounds(assets){return ipcRenderer.invoke('clock-counter:install-sounds',assets);},
+  onUpdateStatus(listener){return subscribe('clock-counter:update-status',listener);},
+  checkForUpdates(){return ipcRenderer.invoke('clock-counter:check-for-updates');},
+  getUpdateStatus(){return ipcRenderer.invoke('clock-counter:get-update-status');}
 });

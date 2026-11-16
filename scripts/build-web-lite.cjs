@@ -137,7 +137,7 @@ html=html.replace('<link rel="stylesheet" href="./src/styles.css">',
   '<style>'+read('src/styles.css')+'\n'+String.raw`
     .window-controls,.clock-only-toggle+.browser-only-hide { display:none!important; }
     #window-minimize,#window-maximize,#window-close,
-    #menu-top,#menu-tray,#menu-hide-tray,#menu-detach,#menu-exit,
+    #menu-top,#menu-tray,#menu-hide-tray,#menu-detach,#menu-exit,#update-trigger,
     .detach-clock,.resize-grip { display:none!important; }
     .status-hint{display:none}
     .titlebar{-webkit-app-region:no-drag}
