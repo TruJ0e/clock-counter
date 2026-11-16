@@ -54,7 +54,7 @@ try{
   assert.equal(apiGet.status(),404);
   assert.ok([404,405].includes(api.status()));
   // Filter only expected 404 browser console errors caused by negative tests.
-  const unexpected=errors.filter(e=>!e.includes('404 (Not Found)'));
+  const unexpected=errors.filter(e=>!e.includes('404 (Not Found)')&&!e.includes('status of 404 ('));
   console.log(JSON.stringify({
     status:response.status(),title:await page.title(),
     csp:headers['content-security-policy'],
