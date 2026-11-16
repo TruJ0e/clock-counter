@@ -57,7 +57,11 @@ const headers=[
   ''
 ].join('\n');
 fs.writeFileSync(path.join(dir,'_headers'),headers);
-fs.writeFileSync(path.join(dir,'robots.txt'),'User-agent: *\nAllow: /\n');
+fs.writeFileSync(path.join(dir,'robots.txt'),
+  ['User-agent: *','Allow: /','Sitemap: https://ttc.trujoedigital.com/sitemap.xml',''].join('\n'));
+fs.writeFileSync(path.join(dir,'sitemap.xml'),
+  ['<?xml version="1.0" encoding="UTF-8"?>',
+   '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://ttc.trujoedigital.com/</loc></url></urlset>',''].join('\n'));
 for (const name of fs.readdirSync(dir)) {
   const file=path.join(dir,name);
   console.log(name+' '+fs.statSync(file).size+' bytes');
