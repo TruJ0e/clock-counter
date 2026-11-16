@@ -471,6 +471,74 @@ a.download-trigger:hover {background:#303030;}
 a.download-trigger:focus-visible {outline:2px solid var(--green);outline-offset:-2px;}
 @media(max-width:385px) {#update-trigger,a.download-trigger {font-size:12px;padding:0 3px;}}
 
+/* v0.6.0: Scheduled start times live below the slide-up transport controls. */
+.clock-tile { --schedule-row-height: 36px; }
+.controls-drawer {
+  height: calc(var(--drawer-panel-height) + var(--drawer-tab-height) + var(--schedule-row-height));
+}
+.schedule-controls {
+  flex: 0 0 var(--schedule-row-height);
+  height: var(--schedule-row-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 3px 6px 5px;
+  border-top: 1px solid #555;
+  min-width: 0;
+}
+.controls-drawer.collapsed .schedule-controls {
+  visibility: hidden;
+  pointer-events: none;
+}
+.schedule-label {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1 1 auto;
+  color: #ddd;
+  font-size: 10px;
+  letter-spacing: .2px;
+  white-space: nowrap;
+}
+.schedule-time {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 158px;
+  height: 26px;
+  color: var(--paper);
+  background: #111;
+  border: 1px solid #aaa;
+  padding: 2px 3px;
+  font-family: inherit;
+  font-size: 12px;
+  color-scheme: dark;
+}
+.schedule-controls button {
+  height: 26px;
+  padding: 2px 7px;
+  border: 1px solid #aaa;
+  font-size: 11px;
+  flex: none;
+  white-space: nowrap;
+}
+.schedule-set { color: var(--green); border-color: var(--green)!important; }
+.schedule-cancel { color: #f7f7f4; }
+.schedule-controls button:hover { background: #2b2b2b; }
+.clock-tile[data-scheduled="true"] .dial { border-color: var(--green); }
+.clock-tile[data-scheduled="true"] .mode-readout:not([hidden]) {
+  border-color: var(--green);
+  color: var(--green);
+}
+@media (max-width: 315px) {
+  .clock-tile { --schedule-row-height: 32px; }
+  .schedule-controls { gap: 3px; padding: 2px 3px; }
+  .schedule-label { font-size: 9px; gap: 3px; }
+  .schedule-time { height: 24px; font-size: 11px; padding: 1px; }
+  .schedule-controls button { height: 24px; font-size: 10px; padding: 2px 4px; }
+}
+
 
     .window-controls,.clock-only-toggle+.browser-only-hide { display:none!important; }
     #window-minimize,#window-maximize,#window-close,

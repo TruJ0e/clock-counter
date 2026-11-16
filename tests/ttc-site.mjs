@@ -81,6 +81,23 @@ try{
   await page.locator('#menu-export').click();
   const download=await downloadPromise;
   assert.equal(download.suggestedFilename(),'clock-counter-setup.json');
+
+  // The published website uses exactly the same wall-clock scheduling model.
+  await page.locator('#all-reset').click();
+  await page.clock.install({time:new Date(2026,10,16,16,56)});
+  const scheduledTile=page.locator('.clock-tile').first();
+  await scheduledTile.locator('.schedule-time').fill('17:00');
+  await scheduledTile.locator('.schedule-set').click();
+  assert.equal(await scheduledTile.getAttribute('data-scheduled'),'true');
+  assert.equal(await scheduledTile.getAttribute('data-running'),'false');
+  assert.match(await scheduledTile.locator('.mode-readout').textContent(),/START.*5:00\s*PM/);
+  await page.clock.fastForward(4*60000+2000);
+  await page.clock.runFor(300);
+  assert.equal(await scheduledTile.getAttribute('data-scheduled'),'false');
+  assert.equal(await scheduledTile.getAttribute('data-running'),'true');
+  const timed=await scheduledTile.locator('.time-readout').textContent();
+  assert.ok(['29:57','29:58','29:59'].includes(timed),'site should count from 5 PM, got '+timed);
+
   // This app must not expose a backend or a path to the user's computer.
   const api=await page.request.post(origin+'/api/remote-control');
   assert.equal(api.status(),404);
@@ -91,7 +108,7 @@ try{
   // Scripts supplied by visitors are blocked by the browser's CSP.
   const attempted=await page.evaluate(async()=>{
     document.head.insertAdjacentHTML('beforeend','<script>window.__ttcInjected = true;<\/script>');
-    await new Promise(resolve=>setTimeout(resolve,50));
+    await Promise.resolve();
     return window.__ttcInjected===true;
   });
   assert.equal(attempted,false);

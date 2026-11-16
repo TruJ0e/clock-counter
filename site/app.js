@@ -183,6 +183,7 @@ const ALARMS = Object.freeze(['chime','beep','bell','digital','custom','off']);
 const MODES = Object.freeze(['countdown','stopwatch','sequence','workbreak']);
 const TASK_ICONS = Object.freeze(['none','reading','work','break','cleanup','study','exercise']);
 const MAX_STEPS = 48;
+const MAX_SCHEDULE_AHEAD_MS = 48 * 60 * 60 * 1000;
 
 function validColor(value) {
   return typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value);
@@ -245,6 +246,7 @@ function newClock(options={},id=1) {
     startedAtMs:null,
     running:false,
     deadlineMs:null,
+    scheduledStartMs:null,
     ended:false,
     direction:DIRECTIONS.includes(options.direction)?options.direction:'cw',
     color:validColor(options.color)?options.color.toUpperCase():DEFAULT_COLOR,
@@ -288,11 +290,12 @@ function exportClocks(clocks) {
     warningColor:c.warningColor,criticalPercent:c.criticalPercent,
     criticalColor:c.criticalColor,checkpointEnabled:c.checkpointEnabled,
     checkpointPercents:c.checkpointPercents,persistentAlarm:c.persistentAlarm,
-    overtimeEnabled:c.overtimeEnabled
+    overtimeEnabled:c.overtimeEnabled,
+    scheduledStartMs:c.scheduledStartMs??null
   }));
 }
 
-function restoreClocks(raw) {
+function restoreClocks(raw,{preserveUpcomingSchedules=false,nowMs=Date.now()}={}) {
   if(!Array.isArray(raw)||!raw.length)return [newClock()];
   const seen=new Set();
   return raw.slice(0,MAX_CLOCKS).map((entry,i)=>{
@@ -300,9 +303,27 @@ function restoreClocks(raw) {
     if(!idOK(c.id)||seen.has(c.id))c.id='clock-'+(i+1);
     while(seen.has(c.id))c.id+='-x';
     seen.add(c.id);
-    // Importing never silently resumes active timers.
+    // Only local preference restoration preserves future appointments.
+    // Importing a setup never silently arms timers from another machine.
+    const requested=entry?.scheduledStartMs;
+    if(preserveUpcomingSchedules && Number.isSafeInteger(requested) &&
+        requested>nowMs && requested<=nowMs+MAX_SCHEDULE_AHEAD_MS &&
+        (c.mode!=='countdown'||c.durationSeconds>0)) {
+      c.scheduledStartMs=requested;
+    }
     return c;
   });
+}
+
+function scheduleClock(clock,startMs,nowMs=Date.now()) {
+  if(!Number.isSafeInteger(startMs) || startMs<=nowMs ||
+      startMs>nowMs+MAX_SCHEDULE_AHEAD_MS ||
+      (clock.mode==='countdown' && clock.durationSeconds<=0))return clock;
+  // Scheduling a running clock resets it first, then holds the full duration.
+  return {...resetClock(clock),scheduledStartMs:startMs};
+}
+function cancelScheduledStart(clock) {
+  return clock.scheduledStartMs===null ? clock : {...clock,scheduledStartMs:null};
 }
 
 function setDuration(clock,seconds) {
@@ -349,6 +370,8 @@ function setOptions(clock,options) {
 
 function startClock(clock,nowMs) {
   if(clock.running)return clock;
+  // Pressing Play starts now and supersedes any pending Start At time.
+  if(clock.scheduledStartMs!==null)clock={...clock,scheduledStartMs:null};
   if(clock.mode==='stopwatch'){
     return {...clock,running:true,ended:false,alarmActive:false,startedAtMs:nowMs-clock.elapsedMs};
   }
@@ -448,7 +471,15 @@ function tickCountdown(clock,nowMs) {
     alarmActive:clock.persistentAlarm},completed:1,checkpoints:[],transitioned:true};
 }
 function tickClock(clock,nowMs) {
-  if(!clock.running)return {clock,completed:0,checkpoints:[],transitioned:false};
+  if(!clock.running){
+    if(clock.scheduledStartMs===null||nowMs<clock.scheduledStartMs)
+      return {clock,completed:0,checkpoints:[],transitioned:false,scheduledStarted:false};
+    // Use the intended wall-clock time, not the delayed browser render tick.
+    // This catches up correctly after sleep or background tab throttling.
+    const started=startClock(clock,clock.scheduledStartMs);
+    const result=tickClock(started,nowMs);
+    return {...result,scheduledStarted:true};
+  }
   if(clock.mode==='stopwatch'){
     const elapsed=Math.max(0,nowMs-clock.startedAtMs);
     return {clock:{...clock,elapsedMs:elapsed},completed:0,checkpoints:[],transitioned:false};
@@ -458,14 +489,14 @@ function tickClock(clock,nowMs) {
 }
 function pauseClock(clock,nowMs) {
   const res=tickClock(clock,nowMs);
-  return {...res,clock:{...res.clock,running:false,deadlineMs:null,startedAtMs:null}};
+  return {...res,clock:{...res.clock,running:false,deadlineMs:null,startedAtMs:null,scheduledStartMs:null}};
 }
 function resetClock(clock) {
   const first=clock.mode==='sequence'||clock.mode==='workbreak'
     ?clock.sequence[0]?.durationSeconds??clock.durationSeconds:clock.durationSeconds;
   return {...clock,durationSeconds:first,remainingMs:first*1000,
     elapsedMs:0,overtimeMs:0,overtimeActive:false,startedAtMs:null,
-    running:false,deadlineMs:null,ended:false,cycles:0,
+    running:false,deadlineMs:null,scheduledStartMs:null,ended:false,cycles:0,
     sequenceIndex:0,notifiedCheckpoints:[],alarmActive:false};
 }
 function acknowledgeAlarm(clock) {return {...clock,alarmActive:false};}
@@ -484,6 +515,36 @@ function effectiveColor(clock) {
   if(p<=clock.criticalPercent)return clock.criticalColor;
   if(p<=clock.warningPercent)return clock.warningColor;
   return base;
+}
+
+
+/* src/schedule.js */
+// Local wall-clock scheduling helpers. No network calls or timezone database required.
+function nextLocalStartTime(text, nowMs=Date.now()) {
+  if(typeof text!=='string'||!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(text)||!Number.isFinite(nowMs))
+    return null;
+  const [hours,minutes]=text.split(':').map(Number);
+  const now=new Date(nowMs);
+  const candidate=new Date(now.getFullYear(),now.getMonth(),now.getDate(),hours,minutes,0,0);
+  // Spring DST skips certain local minutes; never silently change the requested time.
+  if(candidate.getHours()!==hours||candidate.getMinutes()!==minutes)return null;
+  if(candidate.getTime()<=nowMs)candidate.setDate(candidate.getDate()+1);
+  if(candidate.getHours()!==hours||candidate.getMinutes()!==minutes)return null;
+  return candidate.getTime();
+}
+function nextHourInput(nowMs=Date.now()) {
+  const d=new Date(nowMs);
+  d.setHours(d.getHours()+1,0,0,0);
+  return String(d.getHours()).padStart(2,'0')+':00';
+}
+function scheduledTimeText(epochMs,nowMs=Date.now()) {
+  if(!Number.isFinite(epochMs))return '';
+  const target=new Date(epochMs);
+  const time=target.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+  const start=new Date(nowMs);start.setHours(0,0,0,0);
+  const targetDay=new Date(epochMs);targetDay.setHours(0,0,0,0);
+  const which=targetDay.getTime()===start.getTime()?'TODAY':'TOMORROW';
+  return time+' '+which;
 }
 
 
@@ -677,22 +738,24 @@ function taskPictogram(key) {
 }
 const tileRefs = new Map();
 let tickingHandle = null;
+let tickingPeriod = 0;
 
 // Idle clocks do not need a running interval. This also keeps countdown
 // timing independent from window animations and tests that mock the clock.
 function syncTicker() {
-  const needed = state.clocks.some(clock => clock.running || clock.alarmActive);
-  if (needed && tickingHandle === null) tickingHandle = setInterval(() => advanceAll(), 50);
-  if (!needed && tickingHandle !== null) {
-    clearInterval(tickingHandle);
-    tickingHandle = null;
-  }
+  const active = state.clocks.some(clock => clock.running || clock.alarmActive);
+  const scheduled = state.clocks.some(clock => clock.scheduledStartMs !== null);
+  const period = active ? 50 : scheduled ? 250 : 0;
+  if (period === tickingPeriod) return;
+  if (tickingHandle !== null) clearInterval(tickingHandle);
+  tickingPeriod = period;
+  tickingHandle = period ? setInterval(() => advanceAll(),period) : null;
 }
 
 function loadSavedClocks() {
   try {
     const stored = JSON.parse(localStorage.getItem(storageKey) || 'null');
-    if (Array.isArray(stored)) return restoreClocks(stored);
+    if (Array.isArray(stored)) return restoreClocks(stored,{preserveUpcomingSchedules:true});
   } catch { /* corrupt preferences must not block startup */ }
   const legacyDuration = Number.parseInt(localStorage.getItem('clock-counter:duration') || '1800', 10);
   const legacySoundOff = localStorage.getItem('clock-counter:sound') === 'off';
@@ -908,12 +971,23 @@ function renderClock(clock) {
     refs.progress.dataset.duration=String(clock.durationSeconds);
     refs.progress.dataset.enabled=String(clock.progressMarkers);
   }
+  const isScheduled=clock.scheduledStartMs!==null;
+  refs.root.dataset.scheduled=String(isScheduled);
+  refs.scheduleCancel.hidden=!isScheduled;
+  refs.scheduleSet.textContent=isScheduled?'Change':'Set';
+  if(isScheduled&&document.activeElement!==refs.scheduleTime){
+    const date=new Date(clock.scheduledStartMs);
+    refs.scheduleTime.value=String(date.getHours()).padStart(2,'0')+':'+
+      String(date.getMinutes()).padStart(2,'0');
+  }
   const stageMode=clock.mode==='sequence'||clock.mode==='workbreak';
   refs.stepLabel.hidden=!stageMode;
   refs.stepLabel.textContent=stageMode?(clock.sequenceIndex+1)+'/'+clock.sequence.length:'';
-  refs.modeText.hidden=!(stageMode||clock.mode==='stopwatch'||clock.overtimeActive);
-  refs.modeText.textContent=clock.overtimeActive?'OVERTIME':
+  refs.modeText.hidden=!(isScheduled||stageMode||clock.mode==='stopwatch'||clock.overtimeActive);
+  refs.modeText.textContent=isScheduled?'START '+scheduledTimeText(clock.scheduledStartMs):
+    clock.overtimeActive?'OVERTIME':
     stageMode?nameOfStep(clock).toUpperCase():clock.mode==='stopwatch'?'STOPWATCH':'';
+  refs.modeText.title=isScheduled?'Starts automatically '+new Date(clock.scheduledStartMs).toLocaleString():'';
   const icon=stageMode?clock.sequence[clock.sequenceIndex]?.taskIcon||clock.taskIcon:clock.taskIcon;
   refs.taskSymbol.hidden=icon==='none';
   const iconData=taskPictogram(icon);
@@ -927,6 +1001,9 @@ function renderClock(clock) {
   refs.play.querySelector('.play-icon').hidden=clock.running;
   refs.play.querySelector('.pause-icon').hidden=!clock.running;
   refs.play.disabled=(clock.mode==='countdown'&&clock.durationSeconds===0)||state.locked;
+  refs.scheduleTime.disabled=state.locked;
+  refs.scheduleSet.disabled=state.locked;
+  refs.scheduleCancel.disabled=state.locked;
   refs.root.dataset.running=String(clock.running);
   refs.root.dataset.repeat=String(clock.repeat);
   refs.root.dataset.cycles=String(clock.cycles);
@@ -1008,9 +1085,15 @@ function announceCompletion(clock, completed) {
 }
 function advanceAll(now=Date.now()) {
   for(const old of state.clocks) {
-    if(old.running){
-      const {clock,completed,checkpoints}=tickClock(old,now);
+    if(old.running || (old.scheduledStartMs!==null && now>=old.scheduledStartMs)){
+      const {clock,completed,checkpoints,scheduledStarted}=tickClock(old,now);
       changeClock(old.id,()=>clock);
+      if(scheduledStarted){
+        save();
+        if(clock.running)setDrawerCollapsed(old.id,true);
+        updateStatus(old.name.toUpperCase()+' — SCHEDULED START');
+        action('notify',{title:old.name,body:'Scheduled timer started'});
+      }
       if(completed) {
         announceCompletion(clock,completed);
         if(clock.mode==='sequence'||clock.mode==='workbreak')syncFields(clock);
@@ -1033,6 +1116,35 @@ function advanceAll(now=Date.now()) {
   }
 }
 
+function setScheduledStart(id) {
+  if(rejectLocked())return;
+  const clock=getClock(id);
+  const refs=tileRefs.get(id);
+  if(!clock||!refs)return;
+  const now=Date.now();
+  const start=nextLocalStartTime(refs.scheduleTime.value,now);
+  if(start===null){
+    updateStatus('INVALID START TIME — CHOOSE A VALID LOCAL TIME');
+    return;
+  }
+  const scheduled=changeClock(id,old=>scheduleClock(old,start,now),true);
+  if(scheduled?.scheduledStartMs!==start){
+    updateStatus('SET A POSITIVE TIMER DURATION FIRST');
+    return;
+  }
+  prepareStart();
+  setDrawerCollapsed(id,true);
+  selectClock(id);
+  updateStatus(scheduled.name.toUpperCase()+' — STARTS '+scheduledTimeText(start,now));
+}
+function cancelSchedule(id) {
+  if(rejectLocked())return;
+  const old=getClock(id);
+  if(!old||old.scheduledStartMs===null)return;
+  changeClock(id,cancelScheduledStart,true);
+  updateStatus(old.name.toUpperCase()+' — SCHEDULE CANCELLED');
+}
+
 function toggleClock(id) {
   if (rejectLocked()) return;
   const clock = getClock(id);
@@ -1045,7 +1157,7 @@ function toggleClock(id) {
     else updateStatus(clock.name.toUpperCase() + ' — PAUSED');
   } else {
     prepareStart();
-    const started = changeClock(id, old => startClock(old, Date.now()));
+    const started = changeClock(id, old => startClock(old, Date.now()), true);
     if (started?.running) setDrawerCollapsed(id, true);
     updateStatus(clock.name.toUpperCase() + ' — RUNNING');
   }
@@ -1054,7 +1166,7 @@ function toggleClock(id) {
 function resetOne(id) {
   if (rejectLocked()) return;
   state.alarmLastPlayed.delete(id);
-  const clock = changeClock(id, resetClock);
+  const clock = changeClock(id, resetClock, true);
   if (clock) updateStatus(clock.name.toUpperCase() + ' — RESET');
 }
 
@@ -1137,6 +1249,9 @@ function createTile(clock) {
     controls: tile.querySelector('.timer-controls'),
     play: tile.querySelector('.play-pause'),
     reset: tile.querySelector('.reset'),
+    scheduleTime: tile.querySelector('.schedule-time'),
+    scheduleSet: tile.querySelector('.schedule-set'),
+    scheduleCancel: tile.querySelector('.schedule-cancel'),
     fields: {
       hours: tile.querySelector('.hours-field'),
       minutes: tile.querySelector('.minutes-field'),
@@ -1144,6 +1259,7 @@ function createTile(clock) {
     }
   };
   refs.controls.id = 'timer-controls-' + clock.id;
+  refs.scheduleTime.value=nextHourInput();
   refs.drawerToggle.setAttribute('aria-controls', refs.controls.id);
   tileRefs.set(clock.id, refs);
   paintMarkers(refs.markings);
@@ -1190,6 +1306,8 @@ function createTile(clock) {
   });
   refs.play.addEventListener('click', () => toggleClock(clock.id));
   refs.reset.addEventListener('click', () => resetOne(clock.id));
+  refs.scheduleSet.addEventListener('click',()=>setScheduledStart(clock.id));
+  refs.scheduleCancel.addEventListener('click',()=>cancelSchedule(clock.id));
   tile.querySelector('.tile-settings').addEventListener('click', () => openSettings(clock.id));
   tile.querySelector('.tile-remove').addEventListener('click', () => removeClock(clock.id));
   board.append(tile);
@@ -1262,6 +1380,7 @@ function startAll() {
     renderClock(clock);
     if (clock.running) setDrawerCollapsed(clock.id, true);
   }
+  save();
   updateStatus('ALL TIMERS STARTED');
 }
 
@@ -1269,11 +1388,16 @@ function pauseAll() {
   if (rejectLocked()) return;
   const now = Date.now();
   for (const old of state.clocks) {
+    if(!old.running && old.scheduledStartMs!==null){
+      changeClock(old.id,cancelScheduledStart);
+      continue;
+    }
     if (!old.running) continue;
     const { clock, completed } = pauseClock(old, now);
     changeClock(old.id, () => clock);
     if (completed) announceCompletion(clock, completed);
   }
+  save();
   updateStatus('ALL TIMERS PAUSED');
 }
 
@@ -1283,6 +1407,7 @@ function resetAll() {
   state.clocks = state.clocks.map(resetClock);
   syncTicker();
   for (const clock of state.clocks) renderClock(clock);
+  save();
   updateStatus('ALL TIMERS RESET');
 }
 
@@ -1503,6 +1628,9 @@ function applyLockVisual() {
     refs.fields.seconds.disabled=state.locked;
     refs.play.disabled=state.locked||(clock.mode==='countdown'&&clock.durationSeconds===0);
     refs.reset.disabled=state.locked;
+    refs.scheduleTime.disabled=state.locked;
+    refs.scheduleSet.disabled=state.locked;
+    refs.scheduleCancel.disabled=state.locked;
     refs.dragHandle.draggable=!state.locked;
     refs.detachButton.disabled=state.locked;
     refs.root.querySelector('.tile-settings').disabled=state.locked;
@@ -1875,6 +2003,7 @@ grip.addEventListener('keydown', event => {
 });
 
 refreshBoard();
+syncTicker();
 renderPresetMenu();
 if (localStorage.getItem('clock-counter:clock-only') === 'true') setClockOnly(true);
 updateStatus('READY — ' + state.clocks.length + ' CLOCK' + (state.clocks.length === 1 ? '' : 'S'));

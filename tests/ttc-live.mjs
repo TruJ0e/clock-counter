@@ -47,6 +47,18 @@ try{
   await page.locator('#menu-library').click();
   assert.equal(await page.locator('#library-dialog').isVisible(),true);
   await page.locator('#library-done').click();
+  await page.locator('#all-reset').click();
+  await page.clock.install({time:new Date(2026,10,16,16,56)});
+  const waiting=page.locator('.clock-tile').first();
+  await waiting.locator('.schedule-time').fill('17:00');
+  await waiting.locator('.schedule-set').click();
+  assert.equal(await waiting.getAttribute('data-scheduled'),'true');
+  assert.equal(await waiting.getAttribute('data-running'),'false');
+  await page.clock.fastForward(4*60000+2000);
+  await page.clock.runFor(300);
+  assert.equal(await waiting.getAttribute('data-scheduled'),'false');
+  assert.equal(await waiting.getAttribute('data-running'),'true');
+  assert.match(await waiting.locator('.time-readout').textContent(),/^29:5[789]$/);
   const privateCode=await page.request.get(url+'main.cjs');
   const api=await page.request.post(url+'api/control');
   const apiGet=await page.request.get(url+'api/control');

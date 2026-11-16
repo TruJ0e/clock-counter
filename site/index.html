@@ -65,7 +65,7 @@
         </div>
       </div>
       <button id="help-trigger" class="menu-trigger">Help</button>
-      <a id="download-trigger" class="menu-trigger download-trigger" href="https://github.com/TruJ0e/clock-counter/releases/download/v0.5.0/TruTimeClock-Setup-0.5.0.exe" aria-label="Download the Windows desktop app" title="Install TruTimeClock on Windows">Download</a>
+      <a id="download-trigger" class="menu-trigger download-trigger" href="https://github.com/TruJ0e/clock-counter/releases/download/v0.6.0/TruTimeClock-Setup-0.6.0.exe" aria-label="Download the Windows desktop app" title="Install TruTimeClock on Windows">Download</a>
       <div class="nav-fill"></div>
       <button id="all-start" class="toolbar-button multi-only" title="Start all stopped clocks">▶ All</button>
       <button id="all-pause" class="toolbar-button multi-only" title="Pause all clocks">Ⅱ All</button>
@@ -139,6 +139,13 @@
         <button class="action-button reset" title="Reset clock (R)" aria-label="Reset clock">
           <svg class="action-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M7 9v7h7M7 16A11 11 0 1 1 8 22" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square"/></svg>
         </button>
+        </div>
+        <div class="schedule-controls" role="group" aria-label="Automatic timer start">
+          <label class="schedule-label">START AT
+            <input class="schedule-time" type="time" step="60" aria-label="Local time to start this clock">
+          </label>
+          <button class="schedule-set" type="button" title="Start this timer automatically at the selected clock time">Set</button>
+          <button class="schedule-cancel" type="button" title="Cancel the scheduled start" hidden>Cancel</button>
         </div>
       </div>
     </section>
@@ -295,6 +302,8 @@
     <p><b>+ Clock</b> creates an independent timer. Resize the window to place clocks side by side. Each has its own duration, direction, color, alarm, and repeat setting.</p>
     <p>Press Play to start a clock and automatically slide its bottom controls away. Use the small up arrow at the bottom to bring back Play/Pause, Reset and time adjustment; use the down arrow to tuck them away manually. Each clock has its own independent bottom drawer.</p>
     <p>Use the gear on a clock to change its options. Set hours, minutes, and seconds below the dial. Changing a duration resets that clock only.</p>
+    <p><b>Start At:</b> Set the timer duration, choose a local clock time in the bottom drawer, then press <b>Set</b>. For example, if it is 4:56 PM, choosing 5:00 PM starts automatically at 5:00. If that time has already passed today, it schedules tomorrow. The dial stays full until the start; use <b>Cancel</b>, <b>Reset</b>, or <b>Play</b> to stop waiting (Play starts immediately).</p>
+    <p>The Windows app must stay running (it may be hidden in the system tray). The website must remain open in a browser tab. A queued start is remembered across reloads only if its start time is still in the future.</p>
     <p><b>Space</b>: Start/pause selected clock<br><b>R</b>: Reset selected clock<br><b>Ctrl+N</b>: New clock<br><b>F</b>: Fullscreen<br><b>H</b>: Clock-only mode / restore controls<br><b>Escape</b>: Restore controls or close menu/dialog</p>
     <p><b>File → Timer</b> contains start/pause, reset and timer settings. Clock-only mode shows only your selected clock, without toolbars, while its timer continues to run.</p>
     <p>Clock settings are saved between launches. Active countdowns do not continue after the app has been closed.</p>
