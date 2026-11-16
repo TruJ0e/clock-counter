@@ -1,7 +1,7 @@
 {
   "name": "clock-counter",
-  "version": "0.5.0",
-  "description": "TruTimeClock desktop app with multi-timers, offline presets, weekly secure updates, and Cloudflare website.",
+  "version": "0.6.0",
+  "description": "TruTimeClock with scheduled starts, independent visual timers, presets, and weekly desktop updates.",
   "private": true,
   "type": "module",
   "main": "main.cjs",
@@ -13,7 +13,7 @@
     "dist:portable": "electron-builder --win portable",
     "test:e2e": "node tests/electron-e2e.mjs",
     "icon:build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-icon.ps1",
-    "verify": "npm test && npm run test:e2e && npm run test:focus && npm run test:drawer && npm run test:advanced && npm run test:files && npm run test:update-ui && npm run test:web-lite && npm run test:ttc",
+    "verify": "npm test && npm run test:e2e && npm run test:focus && npm run test:drawer && npm run test:advanced && npm run test:files && npm run test:schedule && npm run test:update-ui && npm run test:web-lite && npm run test:ttc",
     "test:packaged": "node tests/packaged-smoke.mjs",
     "test:focus": "node tests/focus-ui.mjs",
     "test:drawer": "node tests/drawer-ui.mjs",
@@ -27,7 +27,8 @@
     "test:ttc:live": "node tests/ttc-live.mjs",
     "build:release": "electron-builder --win nsis --publish never",
     "test:updates": "node --test tests/update-manager.test.js",
-    "test:update-ui": "node tests/update-ui.mjs"
+    "test:update-ui": "node tests/update-ui.mjs",
+    "test:schedule": "node tests/scheduled-start-ui.mjs"
   },
   "devDependencies": {
     "electron": "^45.3.2",

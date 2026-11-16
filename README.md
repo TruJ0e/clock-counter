@@ -2,7 +2,7 @@
 
 A retro Windows visual timer for people who benefit from **seeing** time instead of calculating it. The colored area of the round dial shows the amount of time remaining and disappears as time runs out. White clock dashes remain decorative; optional quarter-progress markers correspond to the actual duration. Black background, white outlines, red default face and sliding bottom controls remain the default appearance.
 
-Version **0.5.0** adds installed-app automatic updates on top of the v0.4.0 configurable schedules, visual accessibility tools, offline alarms, saved presets and collections, floating clocks, system tray, backup/restore and optimized packaging. No account, telemetry, paid API or internet access is required.
+Version **0.6.0** adds Start At scheduling to the desktop and website, on top of automatic updates and configurable timer modes, visual accessibility tools, offline alarms, saved presets and collections, floating clocks, system tray, backup/restore and optimized packaging. No account, telemetry, paid API or internet access is required.
 
 ## TruTimeClock public website
 
@@ -17,6 +17,16 @@ To refresh the static site from the tested browser edition, run `npm run build:t
 For sharing with someone who just needs the timer, **CLOCK COUNTER Web Lite** is available as one self-contained HTML file (about 117 KB), or a ZIP download of about **29 KB**. It opens in an existing browser, requires no installation, works offline, and preserves the retro timer UI and most timer features. It cannot provide native Windows tray, always-on-top, or separate native floating-window functionality.
 
 Build it with npm run build:web-lite, test it with npm run test:web-lite, or open web-lite/CLOCK COUNTER WEB LITE.html directly. Full usage details and limitations are in web-lite/README.md. The full-featured Windows executable is still the best choice for system-tray operation and native desktop behavior.
+
+## Start At: scheduled clock starts (v0.6.0)
+
+Every clock has its own **START AT** row below the Play/Pause and duration controls. Set the clock's duration, choose a local time (for example, **5:00 PM** when it is **4:56 PM**), and press **Set**. The controls slide down and the clock face displays its scheduled start time. It stays on a full dial until the scheduled moment, then runs the selected countdown, stopwatch, work/break sequence, or activity routine.
+
+- If a chosen time has already passed today, the next occurrence is **tomorrow**. This is a one-time start, not an automatically repeating daily appointment.
+- **Cancel** cancels the scheduled start. **Reset** also cancels it. **Play** starts immediately rather than waiting. **Pause All** cancels all pending scheduled starts.
+- Each clock can wait for its own different time. The schedule survives an app or tab restart **only if it is still in the future**; past start times are not automatically replayed on launch.
+- The **Windows app must remain running** (the tray can keep it running). On the website, leave the tab open; browsers may throttle background tabs. If a tick arrives late, the timer catches up using the original scheduled start time rather than incorrectly starting a full countdown late.
+- Uses the computer or phone's local clock time and timezone, with no remote time service.
 
 ## Website download and desktop updates (v0.5.0)
 

@@ -119,7 +119,7 @@ const shim=String.raw`
   };
 })();
 `;
-const parts=['src/timer-core.js','src/clocks.js','src/library.js','src/alarms.js','src/renderer.js'];
+const parts=['src/timer-core.js','src/clocks.js','src/schedule.js','src/library.js','src/alarms.js','src/renderer.js'];
 let js='';
 for(const name of parts){
   let text=read(name);

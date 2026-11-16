@@ -12,6 +12,7 @@ export const ALARMS = Object.freeze(['chime','beep','bell','digital','custom','o
 export const MODES = Object.freeze(['countdown','stopwatch','sequence','workbreak']);
 export const TASK_ICONS = Object.freeze(['none','reading','work','break','cleanup','study','exercise']);
 export const MAX_STEPS = 48;
+export const MAX_SCHEDULE_AHEAD_MS = 48 * 60 * 60 * 1000;
 
 export function validColor(value) {
   return typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value);
@@ -74,6 +75,7 @@ export function newClock(options={},id=1) {
     startedAtMs:null,
     running:false,
     deadlineMs:null,
+    scheduledStartMs:null,
     ended:false,
     direction:DIRECTIONS.includes(options.direction)?options.direction:'cw',
     color:validColor(options.color)?options.color.toUpperCase():DEFAULT_COLOR,
@@ -117,11 +119,12 @@ export function exportClocks(clocks) {
     warningColor:c.warningColor,criticalPercent:c.criticalPercent,
     criticalColor:c.criticalColor,checkpointEnabled:c.checkpointEnabled,
     checkpointPercents:c.checkpointPercents,persistentAlarm:c.persistentAlarm,
-    overtimeEnabled:c.overtimeEnabled
+    overtimeEnabled:c.overtimeEnabled,
+    scheduledStartMs:c.scheduledStartMs??null
   }));
 }
 
-export function restoreClocks(raw) {
+export function restoreClocks(raw,{preserveUpcomingSchedules=false,nowMs=Date.now()}={}) {
   if(!Array.isArray(raw)||!raw.length)return [newClock()];
   const seen=new Set();
   return raw.slice(0,MAX_CLOCKS).map((entry,i)=>{
@@ -129,9 +132,27 @@ export function restoreClocks(raw) {
     if(!idOK(c.id)||seen.has(c.id))c.id='clock-'+(i+1);
     while(seen.has(c.id))c.id+='-x';
     seen.add(c.id);
-    // Importing never silently resumes active timers.
+    // Only local preference restoration preserves future appointments.
+    // Importing a setup never silently arms timers from another machine.
+    const requested=entry?.scheduledStartMs;
+    if(preserveUpcomingSchedules && Number.isSafeInteger(requested) &&
+        requested>nowMs && requested<=nowMs+MAX_SCHEDULE_AHEAD_MS &&
+        (c.mode!=='countdown'||c.durationSeconds>0)) {
+      c.scheduledStartMs=requested;
+    }
     return c;
   });
+}
+
+export function scheduleClock(clock,startMs,nowMs=Date.now()) {
+  if(!Number.isSafeInteger(startMs) || startMs<=nowMs ||
+      startMs>nowMs+MAX_SCHEDULE_AHEAD_MS ||
+      (clock.mode==='countdown' && clock.durationSeconds<=0))return clock;
+  // Scheduling a running clock resets it first, then holds the full duration.
+  return {...resetClock(clock),scheduledStartMs:startMs};
+}
+export function cancelScheduledStart(clock) {
+  return clock.scheduledStartMs===null ? clock : {...clock,scheduledStartMs:null};
 }
 
 export function setDuration(clock,seconds) {
@@ -178,6 +199,8 @@ export function setOptions(clock,options) {
 
 export function startClock(clock,nowMs) {
   if(clock.running)return clock;
+  // Pressing Play starts now and supersedes any pending Start At time.
+  if(clock.scheduledStartMs!==null)clock={...clock,scheduledStartMs:null};
   if(clock.mode==='stopwatch'){
     return {...clock,running:true,ended:false,alarmActive:false,startedAtMs:nowMs-clock.elapsedMs};
   }
@@ -277,7 +300,15 @@ function tickCountdown(clock,nowMs) {
     alarmActive:clock.persistentAlarm},completed:1,checkpoints:[],transitioned:true};
 }
 export function tickClock(clock,nowMs) {
-  if(!clock.running)return {clock,completed:0,checkpoints:[],transitioned:false};
+  if(!clock.running){
+    if(clock.scheduledStartMs===null||nowMs<clock.scheduledStartMs)
+      return {clock,completed:0,checkpoints:[],transitioned:false,scheduledStarted:false};
+    // Use the intended wall-clock time, not the delayed browser render tick.
+    // This catches up correctly after sleep or background tab throttling.
+    const started=startClock(clock,clock.scheduledStartMs);
+    const result=tickClock(started,nowMs);
+    return {...result,scheduledStarted:true};
+  }
   if(clock.mode==='stopwatch'){
     const elapsed=Math.max(0,nowMs-clock.startedAtMs);
     return {clock:{...clock,elapsedMs:elapsed},completed:0,checkpoints:[],transitioned:false};
@@ -287,14 +318,14 @@ export function tickClock(clock,nowMs) {
 }
 export function pauseClock(clock,nowMs) {
   const res=tickClock(clock,nowMs);
-  return {...res,clock:{...res.clock,running:false,deadlineMs:null,startedAtMs:null}};
+  return {...res,clock:{...res.clock,running:false,deadlineMs:null,startedAtMs:null,scheduledStartMs:null}};
 }
 export function resetClock(clock) {
   const first=clock.mode==='sequence'||clock.mode==='workbreak'
     ?clock.sequence[0]?.durationSeconds??clock.durationSeconds:clock.durationSeconds;
   return {...clock,durationSeconds:first,remainingMs:first*1000,
     elapsedMs:0,overtimeMs:0,overtimeActive:false,startedAtMs:null,
-    running:false,deadlineMs:null,ended:false,cycles:0,
+    running:false,deadlineMs:null,scheduledStartMs:null,ended:false,cycles:0,
     sequenceIndex:0,notifiedCheckpoints:[],alarmActive:false};
 }
 export function acknowledgeAlarm(clock) {return {...clock,alarmActive:false};}

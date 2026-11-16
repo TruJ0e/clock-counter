@@ -50,6 +50,19 @@ try {
   await page.locator('#menu-timer-reset').click();
   assert.equal(await clocks.nth(1).getAttribute('data-running'),'false');
   assert.equal(await clocks.nth(1).locator('.time-readout').textContent(),'01:00');
+  const second=clocks.nth(1);
+  if(await second.locator('.controls-drawer').getAttribute('data-collapsed')==='true')
+    await second.locator('.drawer-toggle').click();
+  const later=new Date(Date.now()+2*60*60*1000);
+  const laterInput=String(later.getHours()).padStart(2,'0')+':'+String(later.getMinutes()).padStart(2,'0');
+  await second.locator('.schedule-time').fill(laterInput);
+  await second.locator('.schedule-set').click();
+  assert.equal(await second.getAttribute('data-scheduled'),'true');
+  assert.equal(await second.getAttribute('data-running'),'false');
+  assert.equal(await second.locator('.mode-readout').isVisible(),true);
+  await second.locator('.drawer-toggle').click();
+  await second.locator('.schedule-cancel').click();
+  assert.equal(await second.getAttribute('data-scheduled'),'false');
   await page.locator('#clock-only').click();
   assert.equal(await page.locator('.menubar').isVisible(), false);
   assert.equal(await clocks.first().isVisible(), false);
@@ -70,7 +83,7 @@ try {
   await page.locator('#menu-library').click();
   assert.equal(await page.locator('#library-dialog').isVisible(),true);
   await page.locator('#library-done').click();
-  console.log('PASS packaged CLOCK COUNTER.exe launches; multi-clock controls, stopwatch, native floating window and preset library work.');
+  console.log('PASS packaged CLOCK COUNTER.exe launches; multi-clock controls, stopwatch, native floating window, scheduled Start At and preset library work.');
 } finally {
   if (app) await app.close().catch(() => {});
   await fs.rm(profile, { recursive: true, force: true, maxRetries: 3 }).catch(() => {});
