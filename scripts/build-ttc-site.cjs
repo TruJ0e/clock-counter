@@ -62,6 +62,14 @@ fs.writeFileSync(path.join(dir,'robots.txt'),
 fs.writeFileSync(path.join(dir,'sitemap.xml'),
   ['<?xml version="1.0" encoding="UTF-8"?>',
    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://ttc.trujoedigital.com/</loc></url></urlset>',''].join('\n'));
+// A top-level 404.html disables Cloudflare Pages' implicit SPA fallback.
+// Unknown routes must be 404, not the timer app with a misleading 200 status.
+const notFound='<!doctype html><html lang="en"><head><meta charset="utf-8">'+
+  '<meta name="viewport" content="width=device-width,initial-scale=1">'+
+  '<title>404 | TruTimeClock</title></head><body>'+
+  '<h1>404 — Page not found</h1><p><a href="/">Return to TruTimeClock</a></p>'+
+  '</body></html>';
+fs.writeFileSync(path.join(dir,'404.html'),notFound);
 for (const name of fs.readdirSync(dir)) {
   const file=path.join(dir,name);
   console.log(name+' '+fs.statSync(file).size+' bytes');

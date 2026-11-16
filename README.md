@@ -6,11 +6,11 @@ Version **0.4.0** adds configurable schedules, visual accessibility tools, offli
 
 ## TruTimeClock public website
 
-The static website version of CLOCK COUNTER is served at **https://ttc.trujoedigital.com/** from Cloudflare Pages under the project **trutimeclock**. Only the files in `site/` are deployed: `index.html`, `app.js`, `styles.css`, `_headers`, and `robots.txt`. The public website needs no account, database, API, or application server and does **not** create a connection to your local computer.
+The static website version of CLOCK COUNTER is served at **https://ttc.trujoedigital.com/** from Cloudflare Pages under the project **trutimeclock**. Only the files in `site/` are deployed: `index.html`, `app.js`, `styles.css`, `_headers`, `404.html`, `robots.txt`, and `sitemap.xml`. The public website needs no account, database, API, or application server and does **not** create a connection to your local computer.
 
 The site's content-security policy forbids network connections from app scripts and disallows third-party scripts, inline JavaScript, iframes and web workers. The Cloudflare Pages response headers also deny framing, limit browser permissions and require HTTPS where supported. User timer settings stay in the visitor's browser local storage; the only access to local files is through a user-initiated file picker for import and export. **No website can guarantee zero security risk**, but this design minimizes exposed functionality.
 
-To refresh the static site from the tested browser edition, run `npm run build:ttc`, then `npm run test:ttc`. Commit updated `site/` assets to `main`. Cloudflare Pages Git deployments publish those assets, without running Node.js or Electron in the hosted app.
+To refresh the static site from the tested browser edition, run `npm run build:ttc`, then `npm run test:ttc`. After deployment, `npm run test:ttc:live` checks the public custom domain and HTTP 404 behavior. Commit updated `site/` assets to `main`. Cloudflare Pages Git deployments publish those assets, without running Node.js or Electron in the hosted app.
 
 ## Ultra-small Browser Edition (new)
 

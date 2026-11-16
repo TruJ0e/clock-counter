@@ -23,7 +23,8 @@
     "test:web-lite": "npm run build:web-lite && node tests/web-lite.mjs",
     "build:ttc": "node scripts/build-ttc-site.cjs",
     "test:ttc": "npm run build:ttc && node tests/ttc-site.mjs",
-    "audit:public": "node scripts/audit-public.cjs"
+    "audit:public": "node scripts/audit-public.cjs",
+    "test:ttc:live": "node tests/ttc-live.mjs"
   },
   "devDependencies": {
     "electron": "^45.3.2",
