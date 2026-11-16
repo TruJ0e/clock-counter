@@ -4,6 +4,12 @@ A retro Windows visual timer for people who benefit from **seeing** time instead
 
 Version **0.4.0** adds configurable schedules, visual accessibility tools, offline alarms, saved presets and collections, floating clocks, system tray, backup/restore and optimized packaging. No account, telemetry, paid API or internet access is required.
 
+## Ultra-small Browser Edition (new)
+
+For sharing with someone who just needs the timer, **CLOCK COUNTER Web Lite** is available as one self-contained HTML file (about 117 KB), or a ZIP download of about **29 KB**. It opens in an existing browser, requires no installation, works offline, and preserves the retro timer UI and most timer features. It cannot provide native Windows tray, always-on-top, or separate native floating-window functionality.
+
+Build it with npm run build:web-lite, test it with npm run test:web-lite, or open web-lite/CLOCK COUNTER WEB LITE.html directly. Full usage details and limitations are in web-lite/README.md. The full-featured Windows executable is still the best choice for system-tray operation and native desktop behavior.
+
 ## Run on Windows
 
 Build the portable executable using Node.js:
