@@ -20,7 +20,10 @@
     "test:advanced": "node tests/advanced-ui.mjs",
     "test:files": "node tests/file-operations.mjs",
     "build:web-lite": "node scripts/build-web-lite.cjs",
-    "test:web-lite": "npm run build:web-lite && node tests/web-lite.mjs"
+    "test:web-lite": "npm run build:web-lite && node tests/web-lite.mjs",
+    "build:ttc": "node scripts/build-ttc-site.cjs",
+    "test:ttc": "npm run build:ttc && node tests/ttc-site.mjs",
+    "audit:public": "node scripts/audit-public.cjs"
   },
   "devDependencies": {
     "electron": "^45.3.2",

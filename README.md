@@ -4,6 +4,14 @@ A retro Windows visual timer for people who benefit from **seeing** time instead
 
 Version **0.4.0** adds configurable schedules, visual accessibility tools, offline alarms, saved presets and collections, floating clocks, system tray, backup/restore and optimized packaging. No account, telemetry, paid API or internet access is required.
 
+## TruTimeClock public website
+
+The static website version of CLOCK COUNTER is served at **https://ttc.trujoedigital.com/** from Cloudflare Pages under the project **trutimeclock**. Only the files in `site/` are deployed: `index.html`, `app.js`, `styles.css`, `_headers`, and `robots.txt`. The public website needs no account, database, API, or application server and does **not** create a connection to your local computer.
+
+The site's content-security policy forbids network connections from app scripts and disallows third-party scripts, inline JavaScript, iframes and web workers. The Cloudflare Pages response headers also deny framing, limit browser permissions and require HTTPS where supported. User timer settings stay in the visitor's browser local storage; the only access to local files is through a user-initiated file picker for import and export. **No website can guarantee zero security risk**, but this design minimizes exposed functionality.
+
+To refresh the static site from the tested browser edition, run `npm run build:ttc`, then `npm run test:ttc`. Commit updated `site/` assets to `main`. Cloudflare Pages Git deployments publish those assets, without running Node.js or Electron in the hosted app.
+
 ## Ultra-small Browser Edition (new)
 
 For sharing with someone who just needs the timer, **CLOCK COUNTER Web Lite** is available as one self-contained HTML file (about 117 KB), or a ZIP download of about **29 KB**. It opens in an existing browser, requires no installation, works offline, and preserves the retro timer UI and most timer features. It cannot provide native Windows tray, always-on-top, or separate native floating-window functionality.

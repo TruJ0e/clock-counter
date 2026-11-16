@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta name="description" content="A tiny, private, accessible visual clock with independent timers, stopwatch, schedules, presets and offline alarms.">
+  <meta name="application-name" content="TruTimeClock">
+  <link rel="canonical" href="https://ttc.trujoedigital.com/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; media-src data: blob:; connect-src 'none'; child-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta name="theme-color" content="#050505">
+  <title>TruTimeClock | Free Visual Timer</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-shell" id="app-shell">
+    <header class="titlebar" aria-label="Window title bar">
+      <svg class="brand-icon" viewBox="0 0 32 38" aria-hidden="true">
+        <path d="M12 3h8M16 3v5M9 8h14M7 14l-3-3M25 14l3-3" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"/>
+        <circle cx="16" cy="23" r="12" fill="none" stroke="currentColor" stroke-width="3"/>
+        <path d="M16 13v11l6 4" fill="none" stroke="currentColor" stroke-width="2"/>
+      </svg>
+      <span class="app-name">TRUTIMECLOCK</span>
+      <div class="window-controls">
+        <button id="window-minimize" aria-label="Minimize" title="Minimize">−</button>
+        <button id="window-maximize" aria-label="Maximize or restore" title="Maximize">□</button>
+        <button id="window-close" aria-label="Close" title="Close">×</button>
+      </div>
+    </header>
+    <nav class="menubar" aria-label="Application menu">
+      <div class="menu-wrap">
+        <button id="file-trigger" class="menu-trigger" aria-haspopup="true" aria-expanded="false" aria-controls="file-menu">File</button>
+        <div class="dropdown" id="file-menu" hidden>
+          <div class="menu-heading">TIMER</div>
+          <button id="menu-timer-toggle">Start / pause selected <kbd>Space</kbd></button>
+          <button id="menu-timer-reset">Reset selected <kbd>R</kbd></button>
+          <button id="menu-timer-settings">Timer settings…</button>
+          <div class="dropdown-separator"></div>
+          <button id="menu-new">New clock <kbd>Ctrl+N</kbd></button>
+          <button id="menu-detach">Detach selected into window</button>
+          <button id="menu-library">Presets &amp; collections…</button>
+          <button id="menu-export">Export setup…</button>
+          <button id="menu-import">Import setup…</button>
+          <div class="dropdown-separator"></div>
+          <button id="menu-lock">Lock controls &amp; layout <span id="lock-check"></span></button>
+          <button id="menu-tray">Enable system tray <span id="tray-check"></span></button>
+          <button id="menu-hide-tray">Hide window to tray</button>
+          <button id="menu-start-all">Start all clocks</button>
+          <button id="menu-pause-all">Pause all clocks</button>
+          <button id="menu-reset-all">Reset all clocks</button>
+          <div class="dropdown-separator"></div>
+          <div class="menu-heading">QUICK TIMERS — SELECTED CLOCK</div>
+          <div class="preset-grid" role="group" aria-label="Quick timer presets">
+            <button data-preset="120">2m</button><button data-preset="300">5m</button>
+            <button data-preset="600">10m</button><button data-preset="900">15m</button>
+            <button data-preset="1200">20m</button><button data-preset="1800">30m</button>
+            <button data-preset="2700">45m</button><button data-preset="3600">60m</button>
+          </div>
+          <div id="custom-preset-menu" class="custom-preset-menu" hidden></div>
+          <div class="dropdown-separator"></div>
+          <button id="menu-top" aria-pressed="false">Always on top <span id="top-check"></span></button>
+          <button id="menu-clock-only">Hide controls (clock only) <kbd>H</kbd></button>
+          <button id="menu-fullscreen">Fullscreen <kbd>F</kbd></button>
+          <button id="menu-help">Help</button>
+          <button id="menu-exit">Exit</button>
+        </div>
+      </div>
+      <button id="help-trigger" class="menu-trigger">Help</button>
+      <div class="nav-fill"></div>
+      <button id="all-start" class="toolbar-button multi-only" title="Start all stopped clocks">▶ All</button>
+      <button id="all-pause" class="toolbar-button multi-only" title="Pause all clocks">Ⅱ All</button>
+      <button id="all-reset" class="toolbar-button multi-only" title="Reset all clocks">↺ All</button>
+      <button id="add-clock" class="toolbar-button add-clock" title="Add an independent clock (Ctrl+N)">+ <span class="add-label">Clock</span></button>
+      <button id="clock-only" class="toolbar-button clock-only-toggle" aria-label="Hide controls, show clock only" title="Clock only (H)">▣</button>
+    </nav>
+
+    <button id="focus-restore" class="focus-restore" title="Show controls (H or Escape)" aria-label="Show controls" hidden>↗</button>
+    <div class="focus-drag" aria-hidden="true"></div>
+    <main class="main-area">
+      <div id="clock-board" class="clock-board single" aria-label="Countdown clocks"></div>
+    </main>
+    <footer class="statusbar">
+      <span id="global-status" role="status" aria-live="polite">READY</span>
+      <span class="status-hint">Drag corner to resize</span>
+      <div id="resize-grip" class="resize-grip" title="Drag to resize window" role="button" tabindex="0" aria-label="Resize window"></div>
+    </footer>
+  </div>
+
+  <template id="clock-template">
+    <section class="clock-tile" tabindex="-1">
+      <header class="clock-heading">
+        <div class="clock-name-wrap">
+          <span class="select-mark" aria-hidden="true">◆</span>
+          <span class="task-symbol" aria-hidden="true" hidden></span>
+          <input class="clock-name" type="text" maxlength="36" autocomplete="off" aria-label="Clock name">
+        </div>
+        <span class="step-label" hidden></span>
+        <span class="cycle-count" hidden></span>
+        <button class="ack-alarm" hidden aria-label="Acknowledge alarm" title="Stop repeating alarm">ACK</button>
+        <button class="drag-handle multi-only" draggable="true" aria-label="Drag to reorder clock" title="Drag to reorder">⋮⋮</button>
+        <button class="detach-clock" aria-label="Detach clock to floating window" title="Detach to floating window">□</button>
+        <button class="tile-settings" title="Direction, color, alarm, and repeat" aria-label="Clock settings">⚙</button>
+        <button class="tile-remove multi-only" title="Remove clock" aria-label="Remove clock">×</button>
+      </header>
+      <div class="dial-space">
+        <div class="dial" role="img" aria-label="Timer face">
+          <svg class="dial-markings" viewBox="0 0 400 400" aria-hidden="true" focusable="false"></svg>
+          <svg class="progress-markings" viewBox="0 0 400 400" aria-hidden="true" focusable="false" hidden></svg>
+          <output class="time-readout" role="timer" aria-label="Time remaining">30:00</output>
+          <span class="time-up" hidden>TIME UP</span>
+          <span class="mode-readout" hidden></span>
+        </div>
+      </div>
+      <div class="controls-drawer" data-collapsed="false">
+        <button class="drawer-toggle" aria-label="Hide timer controls" aria-expanded="true" title="Slide timer controls down" type="button">
+          <span class="drawer-arrow" aria-hidden="true">▼</span>
+        </button>
+        <div class="timer-controls">
+        <div class="time-fields" role="group" aria-label="Set clock duration">
+          <div class="spin-field">
+            <input class="hours-field" aria-label="Hours" inputmode="numeric" type="text" pattern="[0-9]*" maxlength="2" value="0" autocomplete="off">
+            <div class="spin-buttons"><button data-field="hours" data-step="1" aria-label="Add hour">▲</button><button data-field="hours" data-step="-1" aria-label="Subtract hour">▼</button></div>
+          </div>
+          <span class="time-separator">:</span>
+          <div class="spin-field">
+            <input class="minutes-field" aria-label="Minutes" inputmode="numeric" type="text" pattern="[0-9]*" maxlength="2" value="30" autocomplete="off">
+            <div class="spin-buttons"><button data-field="minutes" data-step="1" aria-label="Add minute">▲</button><button data-field="minutes" data-step="-1" aria-label="Subtract minute">▼</button></div>
+          </div>
+          <span class="time-separator">:</span>
+          <div class="spin-field">
+            <input class="seconds-field" aria-label="Seconds" inputmode="numeric" type="text" pattern="[0-9]*" maxlength="2" value="0" autocomplete="off">
+            <div class="spin-buttons"><button data-field="seconds" data-step="1" aria-label="Add second">▲</button><button data-field="seconds" data-step="-1" aria-label="Subtract second">▼</button></div>
+          </div>
+        </div>
+        <button class="action-button play-pause" title="Start or pause clock (Space)" aria-label="Start clock">
+          <svg class="action-icon play-icon" viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M9 4 28 16 9 28Z"/></svg>
+          <svg class="action-icon pause-icon" viewBox="0 0 32 32" aria-hidden="true" hidden><path fill="currentColor" d="M7 4h7v24H7zm11 0h7v24h-7z"/></svg>
+        </button>
+        <button class="action-button reset" title="Reset clock (R)" aria-label="Reset clock">
+          <svg class="action-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M7 9v7h7M7 16A11 11 0 1 1 8 22" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square"/></svg>
+        </button>
+        </div>
+      </div>
+    </section>
+  </template>
+
+  <dialog id="settings-dialog" class="settings-dialog" aria-labelledby="settings-heading">
+    <div class="dialog-header">
+      <h2 id="settings-heading">CLOCK SETTINGS</h2>
+      <button id="settings-close" class="close-dialog" aria-label="Close settings">×</button>
+    </div>
+    <label class="settings-field">Countdown direction
+      <select id="setting-direction">
+        <option value="cw">Clockwise</option>
+        <option value="ccw">Counterclockwise</option>
+      </select>
+    </label>
+    <fieldset class="color-fieldset">
+      <legend>Clock color</legend>
+      <div class="color-swatches" id="color-swatches" role="group" aria-label="Clock colors"></div>
+      <label class="custom-color">Custom <input id="setting-color" type="color" value="#f20b14" aria-label="Custom clock color"></label>
+    </fieldset>
+    <label class="settings-field">Alarm sound
+      <select id="setting-alarm">
+        <option value="chime">Classic chime</option>
+        <option value="beep">Single beep</option>
+        <option value="bell">Bell</option>
+        <option value="digital">Retro digital</option>
+        <option value="custom">Imported audio file</option>
+        <option value="off">Silent</option>
+      </select>
+    </label>
+    <div class="row-between">
+      <label class="settings-field settings-volume">Volume
+        <input id="setting-volume" type="range" min="0" max="100" step="5" value="70">
+      </label>
+      <button id="preview-alarm" class="panel-button">▶ Preview</button>
+    </div>
+    <label class="check-setting"><input id="setting-repeat" type="checkbox"> Repeat continuously</label>
+    <label class="check-setting"><input id="setting-show-time" type="checkbox" checked> Show numeric time</label>
+    <label class="check-setting"><input id="setting-show-ticks" type="checkbox" checked> Show decorative dashes</label>
+
+    <fieldset class="advanced-section">
+      <legend>Timer type</legend>
+      <label class="settings-field">Mode
+        <select id="setting-mode">
+          <option value="countdown">Countdown</option>
+          <option value="stopwatch">Stopwatch (count up)</option>
+          <option value="sequence">Activity sequence</option>
+          <option value="workbreak">Work / break schedule</option>
+        </select>
+      </label>
+      <label class="settings-field" id="stopwatch-goal-field" hidden>Stopwatch goal (minutes)
+        <input id="setting-stopwatch-goal" type="number" min="1" max="5999" value="30">
+      </label>
+      <div id="sequence-options" hidden>
+        <label class="settings-field">Saved sequence collection
+          <select id="setting-sequence"></select>
+        </label>
+        <button id="open-sequence-library" class="panel-button">Edit collections…</button>
+        <label class="check-setting"><input id="setting-sequence-repeat" type="checkbox"> Repeat entire sequence</label>
+      </div>
+      <div id="workbreak-options" hidden>
+        <div class="work-grid">
+          <label>Work (min)<input id="setting-work-min" type="number" min="1" max="999" value="25"></label>
+          <label>Break (min)<input id="setting-break-min" type="number" min="1" max="999" value="5"></label>
+          <label>Long break<input id="setting-long-min" type="number" min="1" max="999" value="15"></label>
+          <label>Rounds<input id="setting-rounds" type="number" min="1" max="12" value="4"></label>
+        </div>
+        <label class="check-setting"><input id="setting-work-repeat" type="checkbox"> Repeat the schedule</label>
+      </div>
+    </fieldset>
+    <fieldset class="advanced-section">
+      <legend>Visual accessibility</legend>
+      <label class="settings-field">Task picture
+        <select id="setting-task-icon">
+          <option value="none">None</option>
+          <option value="reading">Reading</option>
+          <option value="work">Work</option>
+          <option value="break">Break</option>
+          <option value="cleanup">Cleanup</option>
+          <option value="study">Study</option>
+          <option value="exercise">Exercise</option>
+        </select>
+      </label>
+      <label class="check-setting"><input id="setting-progress-markers" type="checkbox"> Meaningful quarter/half progress marks</label>
+      <label class="check-setting"><input id="setting-hide-on-play" type="checkbox"> Hide digital time automatically when playing</label>
+      <label class="check-setting"><input id="setting-warning" type="checkbox"> Change colors as time runs low</label>
+      <div class="work-grid">
+        <label>Warning at %<input id="setting-warning-percent" type="number" min="1" max="99" value="25"></label>
+        <label>Warning color<input id="setting-warning-color" type="color" value="#FFD23F"></label>
+        <label>Critical at %<input id="setting-critical-percent" type="number" min="1" max="99" value="10"></label>
+        <label>Critical color<input id="setting-critical-color" type="color" value="#F20B14"></label>
+      </div>
+      <label class="check-setting"><input id="setting-checkpoints" type="checkbox"> Sound and notify at time checkpoints</label>
+      <label class="settings-field">Checkpoint percentages (remaining)
+        <input id="setting-checkpoint-values" type="text" maxlength="24" value="50,25,10" placeholder="50,25,10">
+      </label>
+      <label class="check-setting"><input id="setting-overtime" type="checkbox"> After zero, count upward in overtime</label>
+    </fieldset>
+    <fieldset class="advanced-section">
+      <legend>Alarm behavior</legend>
+      <label class="check-setting"><input id="setting-persistent" type="checkbox"> Keep sounding until acknowledged</label>
+      <button id="import-custom-sound" class="panel-button">Import MP3 / WAV / OGG…</button>
+      <span id="custom-sound-status" class="settings-help">No custom sound selected</span>
+    </fieldset>
+
+    <p class="settings-help">Changes apply to this clock only. Every clock counts down independently.</p>
+    <div class="dialog-actions">
+      <button id="duplicate-clock" class="panel-button">Duplicate</button>
+      <button id="delete-clock" class="panel-button danger">Remove</button>
+      <button id="done-settings" class="panel-button primary">Done</button>
+    </div>
+  </dialog>
+
+
+  <dialog id="library-dialog" class="settings-dialog library-dialog" aria-labelledby="library-heading">
+    <div class="dialog-header">
+      <h2 id="library-heading">PRESETS &amp; COLLECTIONS</h2>
+      <button id="library-close" class="close-dialog" aria-label="Close preset library">×</button>
+    </div>
+    <fieldset class="advanced-section">
+      <legend>Custom duration presets</legend>
+      <label class="settings-field">Preset name<input id="preset-name" type="text" maxlength="42" placeholder="Reading time"></label>
+      <label class="settings-field">Minutes<input id="preset-minutes" type="number" min="1" max="5999" value="10"></label>
+      <button id="preset-save" class="panel-button primary">Save duration preset</button>
+      <div id="presets-list" class="library-list"></div>
+    </fieldset>
+    <fieldset class="advanced-section">
+      <legend>Sequential activity collection</legend>
+      <label class="settings-field">Collection name<input id="collection-name" type="text" maxlength="42" placeholder="Morning routine"></label>
+      <div class="work-grid">
+        <label>Activity name<input id="step-name" type="text" maxlength="30" placeholder="Reading"></label>
+        <label>Minutes<input id="step-minutes" type="number" min="1" max="999" value="5"></label>
+        <label>Color<input id="step-color" type="color" value="#F20B14"></label>
+        <label>Type<select id="step-icon"><option value="none">None</option><option value="reading">Reading</option><option value="work">Work</option><option value="break">Break</option><option value="cleanup">Cleanup</option><option value="study">Study</option><option value="exercise">Exercise</option></select></label>
+      </div>
+      <button id="step-add" class="panel-button">Add activity step</button>
+      <div id="steps-list" class="library-list"></div>
+      <button id="collection-save" class="panel-button primary">Save activity collection</button>
+    </fieldset>
+    <fieldset class="advanced-section">
+      <legend>Clock layout collection</legend>
+      <p class="settings-help">Save all current clocks as a reusable group. Each clock keeps its own duration and settings.</p>
+      <label class="settings-field">Layout name<input id="layout-name" type="text" maxlength="42" placeholder="Classroom clocks"></label>
+      <button id="layout-save" class="panel-button">Save clock layout</button>
+    </fieldset>
+    <div id="collections-list" class="library-list"></div>
+    <div class="dialog-actions"><button id="library-done" class="panel-button primary">Done</button></div>
+  </dialog>
+
+  <dialog id="help-dialog" class="settings-dialog help-dialog" aria-labelledby="help-heading">
+    <div class="dialog-header"><h2 id="help-heading">CLOCK COUNTER</h2><button id="help-close" class="close-dialog" aria-label="Close help">×</button></div>
+    <p>Colored space means time remains. As time runs out, that color disappears. Decorative dashes do not represent minutes.</p>
+    <p><b>+ Clock</b> creates an independent timer. Resize the window to place clocks side by side. Each has its own duration, direction, color, alarm, and repeat setting.</p>
+    <p>Press Play to start a clock and automatically slide its bottom controls away. Use the small up arrow at the bottom to bring back Play/Pause, Reset and time adjustment; use the down arrow to tuck them away manually. Each clock has its own independent bottom drawer.</p>
+    <p>Use the gear on a clock to change its options. Set hours, minutes, and seconds below the dial. Changing a duration resets that clock only.</p>
+    <p><b>Space</b>: Start/pause selected clock<br><b>R</b>: Reset selected clock<br><b>Ctrl+N</b>: New clock<br><b>F</b>: Fullscreen<br><b>H</b>: Clock-only mode / restore controls<br><b>Escape</b>: Restore controls or close menu/dialog</p>
+    <p><b>File → Timer</b> contains start/pause, reset and timer settings. Clock-only mode shows only your selected clock, without toolbars, while its timer continues to run.</p>
+    <p>Clock settings are saved between launches. Active countdowns do not continue after the app has been closed.</p>
+    <button id="help-done" class="panel-button primary">Close</button>
+  </dialog>
+
+  <script defer src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,474 @@
+:root {
+  color-scheme: dark;
+  --paper: #f7f7f4;
+  --black: #050505;
+  --red: #f20b14;
+  --green: #16e600;
+  --muted: #999;
+  font-family: "Lucida Console", "Courier New", monospace;
+  font-weight: 700;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--black); color: var(--paper); }
+button, select, input { font: inherit; }
+button { cursor: pointer; color: inherit; background: none; border: none; }
+button:disabled { opacity: .45; cursor: default; }
+[hidden] { display: none !important; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.app-shell {
+  width: 100%; height: 100dvh; display: grid; grid-template-rows: 42px 39px minmax(0,1fr) 19px;
+  border: 3px solid var(--paper); overflow: hidden; background: #050505;
+}
+.titlebar {
+  display: flex; align-items: center; gap: 8px; padding: 2px 5px 2px 7px;
+  border-bottom: 3px solid var(--paper); -webkit-app-region: drag; user-select: none;
+}
+.brand-icon { flex: 0 0 27px; width: 27px; height: 33px; }
+.app-name {
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: clamp(13px, 3.9vw, 24px); letter-spacing: -1.2px;
+}
+.window-controls { display: flex; flex: none; align-items: center; gap: 0; -webkit-app-region: no-drag; }
+.window-controls button { width: 26px; height: 28px; display: grid; place-items: center; font-size: 25px; padding: 0; line-height: 1; }
+.window-controls button:hover { background: #333; }
+#window-close:hover { background: #ab1515; }
+
+.menubar {
+  min-width: 0; position: relative; display: flex; gap: 2px; align-items: stretch; padding: 0 6px;
+  border-bottom: 3px solid var(--paper); z-index: 10;
+}
+.menu-wrap { display: flex; align-items: stretch; position: relative; }
+.menu-trigger { padding: 0 6px; font-size: 17px; }
+.menu-trigger:hover, .menu-trigger[aria-expanded="true"] { background: #303030; }
+.nav-fill { flex: 1 1 auto; min-width: 0; }
+.toolbar-button {
+  align-self: center; padding: 4px 6px; font-size: 12px; white-space: nowrap; margin-left: 3px;
+  border: 1px solid #969696; min-height: 26px;
+}
+.toolbar-button:hover { background: #292929; }
+.add-clock { border-color: var(--green); }
+.dropdown {
+  position: absolute; left: -7px; top: calc(100% + 3px); width: 252px;
+  border: 2px solid var(--paper); background: var(--black);
+  box-shadow: 4px 4px 0 #444; padding: 4px; z-index: 12;
+  max-height: calc(100dvh - 94px); overflow-y: auto;
+}
+.dropdown > button { display: flex; align-items: center; justify-content: space-between; gap: 9px; padding: 8px; width: 100%; font-size: 13px; text-align: left; }
+.dropdown button:hover { background: #292929; }
+.dropdown kbd { font-family: inherit; font-size: 11px; font-weight: normal; }
+.dropdown-separator { height: 1px; margin: 5px 2px; background: #888; }
+.menu-heading { font-size: 11px; color: #bbb; padding: 6px 7px; }
+.preset-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 4px; margin: 3px 3px 7px; }
+.preset-grid button { border: 1px solid var(--paper); padding: 8px 3px; font-size: 11px; text-align: center; }
+.preset-grid button:hover { border-color: var(--green); }
+
+.main-area { min-width: 0; min-height: 0; overflow: auto; scrollbar-width: thin; scrollbar-color: #888 #070707; }
+.clock-board {
+  width: 100%; min-height: 100%; padding: 8px; display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(min(100%,265px),1fr));
+  align-content: start; gap: 10px;
+}
+.clock-board.single { height: 100%; grid-template-columns: 1fr; align-content: stretch; padding: 6px; }
+.clock-tile {
+  position: relative; background: var(--black); min-width: 0; min-height: 340px;
+  border: 2px solid #777; display: flex; flex-direction: column; overflow: hidden;
+}
+.clock-tile.selected { border-color: var(--paper); }
+.clock-board.single .clock-tile { border: 0; min-height: 260px; height: 100%; }
+.clock-board:not(.single) .clock-tile { height: min(510px, 78vh); }
+.clock-heading { display: flex; align-items: center; flex: 0 0 34px; min-width: 0; gap: 2px; padding: 2px 5px; border-bottom: 1px solid #5d5d5d; }
+.clock-name-wrap { display: flex; min-width: 0; align-items: center; flex: 1 1 0; gap: 3px; }
+.select-mark { font-size: 10px; color: #666; }
+.selected .select-mark { color: var(--green); }
+.clock-name {
+  min-width: 0; width: 100%; font-size: 13px; color: var(--paper); background: transparent;
+  border: 1px solid transparent; outline: none; padding: 3px; overflow: hidden; text-overflow: ellipsis;
+}
+.clock-name:hover, .clock-name:focus { border-color: #777; }
+.cycle-count { color: #bbb; white-space: nowrap; font-size: 9px; margin-right: 3px; }
+.tile-settings, .tile-remove { height: 27px; flex: 0 0 28px; display: grid; place-items: center; font-family: Arial,sans-serif; font-size: 21px; }
+.tile-settings:hover, .tile-remove:hover { background: #333; }
+.tile-remove:hover { color: #ff7272; }
+.clock-board.single .tile-remove { display: none; }
+
+.dial-space {
+  flex: 1 1 auto; min-height: 130px; min-width: 0; padding: 9px 8px;
+  display: grid; place-items: center; container-type: size;
+}
+.dial {
+  position: relative; width: min(99cqw, 99cqh, 760px); max-height: 100%; flex: none;
+  aspect-ratio: 1; border: clamp(3px, 0.7cqw, 6px) solid var(--paper);
+  border-radius: 50%; background: var(--fill,#f20b14);
+  box-shadow: inset 0 0 0 2px #050505;
+}
+.dial-markings { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.time-readout {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: grid; place-items: center; min-width: 58%; max-width: 95%;
+  padding: .15em .18em .10em; border: clamp(2px, 0.6cqw, 4px) solid var(--paper);
+  border-radius: 3px; background: #050505; white-space: nowrap;
+  color: var(--paper); font-size: clamp(17px, 9cqw, 50px); line-height: 1.1;
+  font-variant-numeric: tabular-nums; letter-spacing: -1.4px;
+}
+.time-readout.long { font-size: clamp(13px, 6.5cqw, 37px); }
+.time-up {
+  position: absolute; bottom: 22%; left: 50%; transform: translateX(-50%);
+  color: var(--paper); font-size: clamp(10px, 2.5cqw, 17px);
+  padding: 3px 6px; background: #050505; border: 1px solid var(--paper); white-space: nowrap;
+}
+.dial.ended .time-readout { border-color: #ffef66; }
+
+.timer-controls {
+  flex: 0 0 69px; min-width: 0; display: flex; align-items: center; gap: 7px;
+  padding: 9px 5px; border-top: 2px solid var(--paper);
+}
+.time-fields { min-width: 0; display: flex; align-items: center; gap: 1px; flex: 1 1 0; }
+.spin-field {
+  flex: 1 1 0; display: flex; min-width: 0; height: 44px; border: 2px solid var(--paper);
+}
+.spin-field input {
+  width: 100%; min-width: 0; padding: 0 2px 0 4px; border: 0; background: transparent;
+  color: var(--paper); font-size: clamp(16px, 4.5cqw, 23px); outline: none; text-align: left;
+}
+.spin-field input:focus-visible { outline: 2px solid var(--green); outline-offset: -2px; }
+.spin-buttons { flex: 0 0 15px; border-left: 1px solid #555; display: flex; flex-direction: column; }
+.spin-buttons button { height: 50%; display: grid; place-items: center; padding: 0; font: 12px Arial,sans-serif; line-height: 1; }
+.spin-buttons button:hover { background: #444; }
+.time-separator { flex: none; font-family: Arial,sans-serif; font-size: 19px; }
+.action-button {
+  flex: 0 0 43px; height: 44px; padding: 5px; display: grid; place-items: center;
+  border: 2px solid var(--paper);
+}
+.action-button:hover { background: #333; }
+.action-button:active { transform: translateY(1px); }
+.play-pause { border-color: var(--green); }
+.action-icon { width: 29px; height: 29px; }
+
+.statusbar { border-top: 1px solid #555; display: flex; align-items: center; gap: 10px; padding-left: 7px; color: #aaa; font-size: 9px; min-width: 0; }
+#global-status { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status-hint { margin-left: auto; }
+.resize-grip {
+  width: 18px; height: 17px; flex: none; cursor: nwse-resize;
+  touch-action: none; background: repeating-linear-gradient(135deg, transparent 0 3px, #aaa 4px 5px, transparent 6px 9px);
+  clip-path: polygon(100% 0,100% 100%,0 100%);
+}
+
+.settings-dialog {
+  width: min(420px, calc(100vw - 20px)); max-height: min(680px,calc(100vh - 25px));
+  overflow: auto; padding: 13px 16px; border: 3px solid var(--paper);
+  background: var(--black); color: var(--paper); box-shadow: 5px 5px 0 #333;
+  font-size: 13px;
+}
+.settings-dialog::backdrop { background: #000c; }
+.dialog-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--paper); margin-bottom: 15px; }
+.dialog-header h2 { margin: 0; padding: 0 0 8px; font-size: 18px; }
+.close-dialog { align-self: start; font-size: 26px; padding: 0 6px; }
+.settings-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px; }
+.settings-field select, .panel-button {
+  background: #111; border: 2px solid var(--paper); color: var(--paper); min-height: 36px;
+  padding: 7px; font-size: 13px;
+}
+.settings-field select option { background: #111; color: var(--paper); }
+.color-fieldset { border: 1px solid #999; padding: 9px; margin: 0 0 16px; }
+.color-fieldset legend { padding: 0 5px; }
+.color-swatches { display: grid; grid-template-columns: repeat(9,1fr); gap: 4px; }
+.color-swatch { aspect-ratio:1; min-width: 0; border: 2px solid #555; background: var(--swatch); }
+.color-swatch[aria-pressed="true"] { outline: 2px solid var(--paper); outline-offset: 1px; }
+.custom-color { display: flex; gap: 9px; margin-top: 10px; align-items: center; }
+.custom-color input { width: 52px; height: 30px; background: none; border: 1px solid var(--paper); padding: 0; cursor: pointer; }
+.row-between { display: flex; align-items: end; gap: 10px; }
+.settings-volume { flex: 1; }
+.settings-volume input { width: 100%; accent-color: var(--green); }
+.row-between .panel-button { margin-bottom: 14px; }
+.check-setting { display: flex; align-items: center; gap: 9px; margin: 9px 0; }
+.check-setting input { accent-color: var(--green); width: 18px; height: 18px; }
+.settings-help { color: #aaa; line-height: 1.5; font-weight: normal; }
+.dialog-actions { display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+.panel-button:hover { background: #333; }
+.panel-button.primary { border-color: var(--green); }
+.panel-button.danger { border-color: #e65a5a; }
+.help-dialog p { line-height: 1.65; }
+@media(max-width: 600px) {
+  .menubar .multi-only { display: none; }
+  .clock-board:not(.single) { padding: 6px; gap: 7px; }
+  .clock-board:not(.single) .clock-tile { min-height: 330px; }
+  .status-hint { display: none; }
+  .add-label { display: none; }
+}
+@media(max-width: 340px) {
+  .app-name { font-size: 13px; }
+  .brand-icon { display: none; }
+  .window-controls button { width: 21px; }
+  .clock-heading { padding: 2px; }
+  .time-fields { gap: 0; }
+  .spin-field { height: 36px; }
+  .spin-field input { font-size: 15px; padding-left: 1px; }
+  .spin-buttons { flex-basis: 12px; }
+  .spin-buttons button { font-size: 9px; }
+  .timer-controls { flex-basis: 58px; gap: 3px; padding: 5px 1px; }
+  .action-button { flex-basis: 34px; height: 36px; padding: 3px; }
+  .action-icon { width: 25px; height: 25px; }
+  .time-readout { letter-spacing: -1px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  *, *::before, *::after { transition:none !important; animation:none !important; }
+}
+
+.dial-markings[hidden] { display: none !important; }
+
+/* Responsive chrome: the top bars scale down with a compact timer window. */
+.dropdown { width: min(252px, calc(100vw - 16px)); max-height: calc(100dvh - 65px); }
+.clock-only-toggle { min-width: 29px; }
+@media (max-width: 450px) {
+  .app-shell:not(.clock-only) { grid-template-rows: 32px 29px minmax(0,1fr) 13px; }
+  .titlebar { gap: 4px; padding: 0 3px; border-bottom-width: 2px; }
+  .brand-icon { flex-basis: 19px; width: 19px; height: 24px; }
+  .app-name { font-size: clamp(11px, 3.3vw, 15px); letter-spacing: -.5px; }
+  .window-controls button { width: 21px; height: 23px; font-size: 19px; }
+  .menubar { padding: 0 3px; border-bottom-width: 2px; gap: 1px; }
+  .menu-trigger { font-size: 13px; padding: 0 5px; }
+  .toolbar-button { min-height: 21px; font-size: 11px; padding: 2px 4px; margin-left: 1px; }
+  .statusbar { font-size: 8px; }
+  .resize-grip { width: 13px; height: 12px; }
+  .clock-board.single .clock-tile { min-height: 0; }
+  .clock-heading { flex-basis: 28px; }
+  .timer-controls { flex-basis: 59px; padding: 5px 3px; }
+  .spin-field, .action-button { height: 39px; }
+}
+@media (max-width: 315px) {
+  .app-shell:not(.clock-only) { grid-template-rows: 26px 24px minmax(0,1fr) 11px; }
+  .brand-icon { width: 16px; height: 21px; flex-basis: 16px; }
+  .app-name { font-size: 10px; letter-spacing: -.6px; }
+  .window-controls button { width: 18px; height: 19px; font-size: 17px; }
+  #help-trigger, .add-label { display: none; }
+  .menu-trigger { font-size: 11px; padding: 0 4px; }
+  .toolbar-button { min-height: 18px; padding: 1px 5px; font-size: 10px; }
+  .statusbar { font-size: 7px; }
+  .clock-heading { flex-basis: 23px; }
+  .clock-name { font-size: 10px; }
+  .tile-settings, .tile-remove { height: 21px; flex-basis: 21px; font-size: 17px; }
+  .clock-board.single .clock-tile { min-height: 0; }
+  .timer-controls { flex-basis: 43px; gap: 3px; padding: 3px 2px; }
+  .spin-field, .action-button { height: 32px; }
+  .action-button { flex-basis: 30px; padding: 2px; }
+  .action-icon { width: 22px; height: 22px; }
+  .spin-field input { font-size: 14px; }
+  .spin-buttons { flex-basis: 11px; }
+  .spin-buttons button { font-size: 9px; }
+  .time-separator { font-size: 15px; }
+}
+@media (max-height: 410px) {
+  .clock-board.single .clock-tile { min-height: 0; }
+  .clock-board.single .clock-heading { flex-basis: 24px; }
+  .clock-board.single .timer-controls { flex-basis: 43px; padding-top: 3px; padding-bottom: 3px; }
+  .clock-board.single .dial-space { min-height: 68px; padding: 3px; }
+  .clock-board.single .spin-field, .clock-board.single .action-button { height: 33px; }
+}
+
+/* Clock-only mode: selected clock fills the mini-window, while still running. */
+.app-shell.clock-only {
+  position: relative;
+  grid-template-rows: minmax(0, 1fr);
+  border-width: 2px;
+}
+.app-shell.clock-only > .titlebar,
+.app-shell.clock-only > .menubar,
+.app-shell.clock-only > .statusbar { display: none !important; }
+.app-shell.clock-only > .main-area { height: 100%; overflow: hidden; }
+.app-shell.clock-only .clock-board {
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr);
+  align-content: stretch; height: 100%; min-height: 0; padding: 0; gap: 0;
+}
+.app-shell.clock-only .clock-board .clock-tile {
+  height: 100% !important; min-height: 0; width: 100%; padding: 0;
+  border: 0; border-radius: 0; overflow: hidden;
+}
+.app-shell.clock-only .clock-tile:not(.focus-clock) { display: none !important; }
+.app-shell.clock-only .clock-heading,
+.app-shell.clock-only .timer-controls { display: none !important; }
+.app-shell.clock-only .dial-space {
+  width: 100%; height: 100%; min-height: 0;
+  padding: 3px; flex: 1 1 auto;
+}
+.app-shell.clock-only .dial { width: min(98cqw, 98cqh, 1800px); }
+.focus-drag { display: none; }
+.app-shell.clock-only .focus-drag {
+  display: block; position: fixed; left: 0; top: 0; right: 30px; height: 13px;
+  z-index: 60; -webkit-app-region: drag;
+}
+.focus-restore:not([hidden]) {
+  display: grid; place-items: center; position: fixed; right: 5px; top: 5px;
+  width: 26px; height: 26px; padding: 0;
+  border: 1px solid var(--paper); background: #050505;
+  font-size: 18px; line-height: 1;
+  opacity: .23; z-index: 80; -webkit-app-region: no-drag;
+}
+.focus-restore:hover, .focus-restore:focus-visible { opacity: 1; }
+
+/* Slide-up timer drawer. Only the small tab remains when collapsed. */
+.clock-tile {
+  --drawer-panel-height: 69px;
+  --drawer-tab-height: 21px;
+}
+.controls-drawer {
+  flex: 0 0 auto;
+  width: 100%;
+  height: calc(var(--drawer-panel-height) + var(--drawer-tab-height));
+  display: flex;
+  flex-direction: column;
+  background: var(--black);
+  border-top: 2px solid var(--paper);
+  overflow: hidden;
+  transition: height .22s ease;
+}
+.controls-drawer.collapsed {
+  height: var(--drawer-tab-height);
+}
+.drawer-toggle {
+  width: 60px;
+  align-self: center;
+  height: var(--drawer-tab-height);
+  flex: 0 0 var(--drawer-tab-height);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--paper);
+  border-top: 0;
+  border-radius: 0 0 3px 3px;
+  background: #101010;
+  color: var(--paper);
+  font: 12px/1 Arial, sans-serif;
+}
+.drawer-toggle:hover,
+.drawer-toggle:focus-visible { background: #2b2b2b; }
+.controls-drawer.collapsed .drawer-toggle { border-color: #aaa; }
+.drawer-arrow { display: block; line-height: 1; }
+.controls-drawer .timer-controls {
+  flex: 0 0 var(--drawer-panel-height);
+  height: var(--drawer-panel-height);
+  min-height: 0;
+  border-top: 0;
+}
+.controls-drawer.collapsed .timer-controls {
+  visibility: hidden;
+  pointer-events: none;
+}
+@media (max-width: 450px) {
+  .clock-tile { --drawer-panel-height: 59px; --drawer-tab-height: 19px; }
+}
+@media (max-width: 340px) {
+  .clock-tile { --drawer-panel-height: 58px; }
+}
+@media (max-width: 315px) {
+  .clock-tile { --drawer-panel-height: 43px; --drawer-tab-height: 17px; }
+  .drawer-toggle { font-size: 11px; }
+}
+@media (max-height: 410px) {
+  .clock-board.single .clock-tile { --drawer-panel-height: 43px; --drawer-tab-height: 17px; }
+}
+.app-shell.clock-only .controls-drawer { display: none !important; }
+
+/* v0.4.0: optional advanced panels stay inside retro utilitarian styling. */
+.progress-markings {
+  position:absolute;inset:0;width:100%;height:100%;
+  pointer-events:none;
+}
+.task-symbol {
+  color:#f7f7f4;display:flex;align-items:center;gap:3px;
+  border:1px solid #666;padding:2px 3px;white-space:nowrap;
+  font-size:9px;max-width:85px;
+}
+.task-symbol svg {flex:none;width:17px;height:17px;}
+.task-symbol span {overflow:hidden;text-overflow:ellipsis;}
+.step-label {font-size:9px;color:#ddd;white-space:nowrap;}
+.mode-readout:not([hidden]) {
+  position:absolute;bottom:16%;left:50%;transform:translateX(-50%);
+  font-size:clamp(9px,2.7cqw,16px);letter-spacing:.4px;
+  background:#050505;border:1px solid #888;color:#f7f7f4;
+  white-space:nowrap;max-width:85%;overflow:hidden;text-overflow:ellipsis;
+  padding:3px 5px;text-align:center;
+}
+.ack-alarm:not([hidden]) {
+  flex:none;border:1px solid #f7e450;color:#f7e450;
+  font-size:10px;height:25px;min-width:31px;padding:2px 3px;
+}
+.ack-alarm:hover{background:#3a2a00;}
+.drag-handle{height:27px;flex:0 0 19px;font-size:19px;line-height:1;cursor:grab;padding:0;}
+.drag-handle:active{cursor:grabbing;}
+.detach-clock{height:27px;flex:0 0 25px;border:1px solid #555;font-size:17px;padding:0;}
+.detach-clock:hover{background:#333;}
+.clock-board.single .drag-handle{display:none;}
+.clock-tile.dragging{opacity:.45;border-style:dashed;}
+.clock-tile.locked .clock-name{cursor:not-allowed;color:#aaa;}
+.clock-tile.locked .drag-handle{cursor:not-allowed;opacity:.3;}
+.resize-grip.locked{cursor:not-allowed;opacity:.3;}
+.custom-preset-menu:not([hidden]){
+  display:flex;flex-direction:column;gap:3px;
+  max-height:135px;overflow-y:auto;
+}
+.custom-preset-menu button{
+  padding:5px 7px;text-align:left;font-size:11px;
+  border:1px solid #777;
+}
+.custom-preset-menu button:hover{background:#333;}
+.settings-dialog input[type=number],
+.settings-dialog input[type=text],
+.settings-dialog select {
+  width:100%;min-width:0;padding:7px;
+  font-size:12px;background:#111;border:1px solid #aaa;color:#f7f7f4;
+}
+.settings-dialog input[type=color] {
+  width:100%;min-width:38px;height:36px;padding:0;
+  border:1px solid #aaa;background:#111;
+}
+.settings-dialog input[type=checkbox] {flex:none;}
+.advanced-section{border:1px solid #7c7c7c;margin:13px 0;padding:10px;min-width:0;}
+.advanced-section legend{padding:0 5px;font-size:12px;color:#ededed;}
+.advanced-section .settings-field{margin:4px 0 11px;gap:6px;}
+.work-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;margin:7px 0 13px;
+}
+.work-grid label{
+  font-size:11px;display:flex;flex-direction:column;gap:5px;
+}
+.work-grid input,.work-grid select{width:100%;}
+.library-dialog{width:min(500px,calc(100vw - 16px));}
+.library-list{display:flex;flex-direction:column;gap:5px;margin:9px 0;}
+.library-item{
+  display:flex;gap:5px;align-items:center;
+  border:1px solid #555;padding:5px;
+}
+.library-item > span{flex:1;min-width:0;font-size:11px;overflow:hidden;text-overflow:ellipsis;}
+.library-item .panel-button{
+  min-height:28px;font-size:11px;padding:4px;flex:none;
+}
+.library-dialog .advanced-section .panel-button{margin:4px 0;}
+@media(max-width:450px) {
+  .clock-heading{gap:1px;}
+  .clock-name{font-size:11px;}
+  .task-symbol span{display:none;}
+  .task-symbol{padding:1px;max-width:24px;}
+  .task-symbol svg{width:16px;height:16px;}
+  .detach-clock{flex-basis:21px;font-size:15px;}
+  .drag-handle{flex-basis:15px;font-size:16px;}
+  .ack-alarm:not([hidden]){height:22px;min-width:25px;font-size:8px;}
+}
+@media(max-width:315px) {
+  .clock-heading{gap:0;}
+  .task-symbol{max-width:20px;}
+  .drag-handle{flex-basis:12px;}
+  .detach-clock{flex-basis:17px;}
+  .tile-settings,.tile-remove{flex-basis:17px;}
+  .cycle-count,.step-label{font-size:8px;}
+}
+
+
+    .window-controls,.clock-only-toggle+.browser-only-hide { display:none!important; }
+    #window-minimize,#window-maximize,#window-close,
+    #menu-top,#menu-tray,#menu-hide-tray,#menu-detach,#menu-exit,
+    .detach-clock,.resize-grip { display:none!important; }
+    .status-hint{display:none}
+    .titlebar{-webkit-app-region:no-drag}
+    .focus-drag{display:none!important}
