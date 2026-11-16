@@ -5,6 +5,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const root = path.resolve(__dirname, '..');
+const desktopVersion=require('../package.json').version;
+const installerFile='TruTimeClock-Setup-'+desktopVersion+'.exe';
+const downloadUrl='https://github.com/TruJ0e/clock-counter/releases/download/v'+desktopVersion+'/'+installerFile;
+
 execFileSync(process.execPath, [path.join(__dirname,'build-web-lite.cjs')], {cwd:root,stdio:'inherit'});
 const source = fs.readFileSync(path.join(root,'web-lite','CLOCK COUNTER WEB LITE.html'),'utf8');
 const cssMatch = source.match(/<style>([\s\S]*?)<\/style>/);
@@ -36,7 +40,12 @@ let html=source.replace(cssMatch[0],'<link rel="stylesheet" href="/styles.css">'
     '<meta http-equiv="Content-Security-Policy" content="'+policy+'">')
   .replace(/<title>.*?<\/title>/,'<title>'+brand+' | Free Visual Timer</title>')
   .replace('<head>','<head>\n  <meta name="description" content="'+description+'">\n  <meta name="application-name" content="'+brand+'">\n  <link rel="canonical" href="https://ttc.trujoedigital.com/">')
-  .replace(/<span class="app-name">CLOCK COUNTER<\/span>/,'<span class="app-name">TRUTIMECLOCK</span>');
+  .replace(/<span class="app-name">CLOCK COUNTER<\/span>/,'<span class="app-name">TRUTIMECLOCK</span>')
+  .replace(/<button id="update-trigger"[^>]*>Update<\/button>/,
+    '<a id="download-trigger" class="menu-trigger download-trigger" href="'+downloadUrl+'"'+
+    ' aria-label="Download the Windows desktop app" title="Install TruTimeClock on Windows">Download</a>');
+if(!html.includes('id="download-trigger"')||html.includes('id="update-trigger"'))
+  throw new Error('Website Download link was not generated correctly');
 fs.writeFileSync(path.join(dir,'index.html'),html);
 fs.writeFileSync(path.join(dir,'styles.css'),cssMatch[1].trimEnd()+'\n');
 fs.writeFileSync(path.join(dir,'app.js'),jsMatch[1].trimEnd()+'\n');

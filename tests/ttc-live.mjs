@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright-core';
+import fs from 'node:fs';
 const url='https://ttc.trujoedigital.com/';
 const browser=await chromium.launch({
   executablePath:'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',headless:true
@@ -23,6 +24,16 @@ try{
   assert.equal(headers['x-content-type-options'],'nosniff');
   assert.equal(headers['referrer-policy'],'no-referrer');
   assert.equal(await page.title(),'TruTimeClock | Free Visual Timer');
+
+  const desktopVersion=JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url),'utf8')).version;
+  const installerUrl='https://github.com/TruJ0e/clock-counter/releases/download/v'+
+    desktopVersion+'/TruTimeClock-Setup-'+desktopVersion+'.exe';
+  const installerLink=page.locator('#download-trigger');
+  await installerLink.waitFor({state:'visible'});
+  assert.equal(await installerLink.getAttribute('href'),installerUrl);
+  assert.equal(await installerLink.textContent(),'Download');
+  assert.equal(await page.locator('#update-trigger').count(),0);
+
   await page.locator('.clock-tile').first().waitFor();
   assert.equal(await page.locator('.time-readout').first().textContent(),'30:00');
   await page.locator('#add-clock').click();

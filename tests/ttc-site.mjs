@@ -46,6 +46,20 @@ try{
   assert.equal(response.headers()['x-content-type-options'],'nosniff');
   assert.equal(response.headers()['referrer-policy'],'no-referrer');
   assert.equal(await page.title(),'TruTimeClock | Free Visual Timer');
+
+  const downloadLink=page.locator('#download-trigger');
+  await downloadLink.waitFor({state:'visible'});
+  assert.equal(await downloadLink.textContent(),'Download');
+  assert.equal(await page.locator('#update-trigger').count(),0);
+  const version=JSON.parse(await fs.readFile(path.join(root,'package.json'),'utf8')).version;
+  assert.equal(await downloadLink.getAttribute('href'),
+    'https://github.com/TruJ0e/clock-counter/releases/download/v'+version+
+    '/TruTimeClock-Setup-'+version+'.exe');
+  const helpRect=await page.locator('#help-trigger').boundingBox();
+  const downloadRect=await downloadLink.boundingBox();
+  assert.ok(downloadRect.x>=helpRect.x+helpRect.width-1,
+    'Download should appear immediately to the right of Help');
+
   await page.locator('.clock-tile').first().waitFor({timeout:15000});
   assert.equal(await page.locator('.clock-tile .time-readout').first().textContent(),'30:00');
   await page.locator('#add-clock').click();
