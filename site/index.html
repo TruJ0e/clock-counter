@@ -1,12 +1,18 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta name="description" content="A tiny, private, accessible visual clock with independent timers, stopwatch, schedules, presets and offline alarms.">
+  <meta name="description" content="An accessible visual timer you can install on iPhone, iPad, Mac, or Windows.">
   <meta name="application-name" content="TruTimeClock">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="TruTimeClock">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/icons/icon-192.png">
   <link rel="canonical" href="https://ttc.trujoedigital.com/">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; media-src data: blob:; connect-src 'none'; child-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; media-src data: blob:; connect-src 'none'; child-src 'none'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
   <meta name="theme-color" content="#050505">
   <title>TruTimeClock | Free Visual Timer</title>
   <link rel="stylesheet" href="/styles.css">
@@ -65,7 +71,7 @@
         </div>
       </div>
       <button id="help-trigger" class="menu-trigger">Help</button>
-      <a id="download-trigger" class="menu-trigger download-trigger" href="https://github.com/TruJ0e/clock-counter/releases/download/v0.6.0/TruTimeClock-Setup-0.6.0.exe" aria-label="Download the Windows desktop app" title="Install TruTimeClock on Windows">Download</a>
+      <button id="download-trigger" class="menu-trigger download-trigger" type="button" aria-haspopup="dialog" aria-controls="download-dialog">Download</button>
       <div class="nav-fill"></div>
       <button id="all-start" class="toolbar-button multi-only" title="Start all stopped clocks">▶ All</button>
       <button id="all-pause" class="toolbar-button multi-only" title="Pause all clocks">Ⅱ All</button>
@@ -81,6 +87,7 @@
     </main>
     <footer class="statusbar">
       <span id="global-status" role="status" aria-live="polite">READY</span>
+      <a id="site-trujoe-link" class="site-footer-link" href="https://trujoedigital.com/" target="_blank" rel="noopener noreferrer">TruJoe Digital</a>
       <span class="status-hint">Drag corner to resize</span>
       <div id="resize-grip" class="resize-grip" title="Drag to resize window" role="button" tabindex="0" aria-label="Resize window"></div>
     </footer>
@@ -307,9 +314,35 @@
     <p><b>Space</b>: Start/pause selected clock<br><b>R</b>: Reset selected clock<br><b>Ctrl+N</b>: New clock<br><b>F</b>: Fullscreen<br><b>H</b>: Clock-only mode / restore controls<br><b>Escape</b>: Restore controls or close menu/dialog</p>
     <p><b>File → Timer</b> contains start/pause, reset and timer settings. Clock-only mode shows only your selected clock, without toolbars, while its timer continues to run.</p>
     <p>Clock settings are saved between launches. Active countdowns do not continue after the app has been closed.</p>
+    <p class="help-publisher">Made by <a id="help-trujoe-link" href="https://trujoedigital.com/" target="_blank" rel="noopener noreferrer">TruJoe Digital</a></p>
     <button id="help-done" class="panel-button primary">Close</button>
   </dialog>
 
   <script defer src="/app.js"></script>
+<script defer src="/pwa.js"></script>
+<dialog id="download-dialog" class="settings-dialog download-dialog" aria-labelledby="download-heading">
+  <div class="dialog-header">
+    <h2 id="download-heading">GET TRUTIMECLOCK</h2>
+    <button id="download-close" class="close-dialog" type="button" aria-label="Close download options">×</button>
+  </div>
+  <section class="download-option">
+    <h3>iPhone and iPad</h3>
+    <p>In Safari, tap Share, choose <b>Add to Home Screen</b>, turn on <b>Open as Web App</b>, then tap Add. TruTimeClock will appear as an app on your Home Screen.</p>
+    <button id="install-webapp" type="button" class="panel-button primary" hidden>Install Web App</button>
+    <p class="download-note">No App Store download or Apple ID is required. Keep the app open for scheduled alarms; iOS may suspend it in the background.</p>
+  </section>
+  <section class="download-option">
+    <h3>Mac</h3>
+    <a class="panel-button download-choice" id="download-mac-arm" href="https://github.com/TruJ0e/clock-counter/releases/download/v0.6.0/TruTimeClock-Mac-arm64-0.6.0.dmg">Download for Apple Silicon (M1–M-series)</a>
+    <a class="panel-button download-choice" id="download-mac-intel" href="https://github.com/TruJ0e/clock-counter/releases/download/v0.6.0/TruTimeClock-Mac-x64-0.6.0.dmg">Download for Intel Mac</a>
+    <p class="download-note">These builds are not Apple-signed or notarized. Gatekeeper may block them. For an easier installation on macOS Sonoma or later, open this site in Safari and choose File → Add to Dock.</p>
+  </section>
+  <section class="download-option">
+    <h3>Windows</h3>
+    <a class="panel-button download-choice" id="download-windows" href="https://github.com/TruJ0e/clock-counter/releases/download/v0.6.0/TruTimeClock-Setup-0.6.0.exe">Download Windows installer</a>
+    <p class="download-note">The installed Windows app includes its own weekly update checks.</p>
+  </section>
+  <div class="dialog-actions"><button class="panel-button primary" id="download-done" type="button">Close</button></div>
+</dialog>
 </body>
 </html>

@@ -26,13 +26,35 @@ try{
   assert.equal(await page.title(),'TruTimeClock | Free Visual Timer');
 
   const desktopVersion=JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url),'utf8')).version;
-  const installerUrl='https://github.com/TruJ0e/clock-counter/releases/download/v'+
-    desktopVersion+'/TruTimeClock-Setup-'+desktopVersion+'.exe';
-  const installerLink=page.locator('#download-trigger');
-  await installerLink.waitFor({state:'visible'});
-  assert.equal(await installerLink.getAttribute('href'),installerUrl);
-  assert.equal(await installerLink.textContent(),'Download');
+  const release='https://github.com/TruJ0e/clock-counter/releases/download/v'+desktopVersion+'/';
+  const downloadButton=page.locator('#download-trigger');
+  await downloadButton.waitFor({state:'visible'});
+  assert.equal(await downloadButton.textContent(),'Download');
+  await downloadButton.click();
+  assert.equal(await page.locator('#download-dialog').isVisible(),true);
+  assert.equal(await page.locator('#download-windows').getAttribute('href'),
+    release+'TruTimeClock-Setup-'+desktopVersion+'.exe');
+  assert.equal(await page.locator('#download-mac-arm').getAttribute('href'),
+    release+'TruTimeClock-Mac-arm64-'+desktopVersion+'.dmg');
+  assert.equal(await page.locator('#download-mac-intel').getAttribute('href'),
+    release+'TruTimeClock-Mac-x64-'+desktopVersion+'.dmg');
+  assert.ok((await page.locator('#download-dialog').textContent()).includes('Add to Home Screen'));
+  await page.locator('#download-done').click();
+  assert.equal(await page.locator('#site-trujoe-link').getAttribute('href'),
+    'https://trujoedigital.com/');
+  await page.locator('#help-trigger').click();
+  assert.equal(await page.locator('#help-trujoe-link').getAttribute('href'),
+    'https://trujoedigital.com/');
+  await page.locator('#help-done').click();
   assert.equal(await page.locator('#update-trigger').count(),0);
+  const manifestResponse=await page.request.get(url+'manifest.webmanifest');
+  assert.equal(manifestResponse.status(),200);
+  const manifest=await manifestResponse.json();
+  assert.equal(manifest.name,'TruTimeClock');
+  assert.equal(manifest.display,'standalone');
+  assert.ok((await page.request.get(url+'icons/apple-touch-icon.png')).ok());
+  assert.ok((await page.request.get(url+'sw.js')).ok());
+  assert.ok(headers['content-security-policy'].includes("worker-src 'self'"));
 
   await page.locator('.clock-tile').first().waitFor();
   assert.equal(await page.locator('.time-readout').first().textContent(),'30:00');
