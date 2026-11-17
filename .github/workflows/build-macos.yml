@@ -62,7 +62,9 @@ jobs:
           plutil -lint "$app_path/Contents/Info.plist"
           bin="$app_path/Contents/MacOS/CLOCK COUNTER"
           test -x "$bin"
-          lipo -archs "$bin" | grep -w "$ARCH"
+          native_arch="$ARCH"
+          if [[ "$native_arch" == "x64" ]]; then native_arch="x86_64"; fi
+          lipo -archs "$bin" | grep -w "$native_arch"
           test -s "$app_path/Contents/Resources/app.asar"
           hdiutil detach "$mount_path" -quiet
           trap - EXIT
