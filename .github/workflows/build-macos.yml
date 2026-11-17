@@ -1,0 +1,90 @@
+name: Build Apple macOS downloads
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    name: Build macOS ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-15
+          - arch: x64
+            runner: macos-15-intel
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
+    steps:
+      - name: Checkout public source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run pure timer unit tests
+        run: npm test
+
+      - name: Make native Apple icon
+        run: bash scripts/generate-mac-icon.sh
+
+      - name: Build unsigned Apple DMG
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --mac dmg --${{ matrix.arch }} --publish never
+
+      - name: Verify DMG and bundled app architecture
+        shell: bash
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./package.json').version")
+          image="dist/TruTimeClock-Mac-$ARCH-$version.dmg"
+          test -s "$image"
+          hdiutil verify "$image"
+          mount_path="$RUNNER_TEMP/clock-counter-dmg-$ARCH"
+          mkdir -p "$mount_path"
+          hdiutil attach -readonly -nobrowse -mountpoint "$mount_path" "$image" >/dev/null
+          trap 'hdiutil detach "$mount_path" -quiet || true' EXIT
+          app_path="$mount_path/CLOCK COUNTER.app"
+          test -d "$app_path"
+          plutil -lint "$app_path/Contents/Info.plist"
+          bin="$app_path/Contents/MacOS/CLOCK COUNTER"
+          test -x "$bin"
+          lipo -archs "$bin" | grep -w "$ARCH"
+          test -s "$app_path/Contents/Resources/app.asar"
+          hdiutil detach "$mount_path" -quiet
+          trap - EXIT
+          shasum -a 256 "$image" > "$image.sha256"
+          echo "MAC_DMG_VERIFIED=$image"
+
+      - name: Upload verified DMG to public v0.6.0 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./package.json').version")
+          image="dist/TruTimeClock-Mac-$ARCH-$version.dmg"
+          gh release upload "v$version" "$image" "$image.sha256" --repo "$GITHUB_REPOSITORY" --clobber
+
+      - name: Confirm public release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./package.json').version")
+          gh release view "v$version" --repo "$GITHUB_REPOSITORY" --json assets \
+            --jq ".assets[].name" | grep -Fx "TruTimeClock-Mac-$ARCH-$version.dmg"

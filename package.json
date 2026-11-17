@@ -28,7 +28,8 @@
     "build:release": "electron-builder --win nsis --publish never",
     "test:updates": "node --test tests/update-manager.test.js",
     "test:update-ui": "node tests/update-ui.mjs",
-    "test:schedule": "node tests/scheduled-start-ui.mjs"
+    "test:schedule": "node tests/scheduled-start-ui.mjs",
+    "build:mac": "electron-builder --mac dmg --publish never"
   },
   "devDependencies": {
     "electron": "^45.3.2",
@@ -82,7 +83,23 @@
         "repo": "clock-counter",
         "releaseType": "release"
       }
-    ]
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "assets/icon.icns",
+      "identity": null,
+      "gatekeeperAssess": false,
+      "artifactName": "TruTimeClock-Mac-${arch}-${version}.${ext}",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    }
   },
   "author": "TruJ0e",
   "dependencies": {

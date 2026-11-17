@@ -12,8 +12,16 @@ for(const line of lines){
   const match=line.match(/^\s{2}([A-Za-z-]+):\s*(.+)$/);
   if(match&&!(match[1] in headers))headers[match[1]]=match[2];
 }
+const swSection=lines.indexOf('/sw.js');
+const swCsp=swSection<0 ? null : (
+  lines.slice(swSection+1).find(line=>line.trim().startsWith('Content-Security-Policy: '))||''
+).trim().replace(/^Content-Security-Policy:\s*/, '');
 const mime={'index.html':'text/html;charset=utf-8','app.js':'application/javascript;charset=utf-8',
-  'styles.css':'text/css;charset=utf-8','robots.txt':'text/plain;charset=utf-8'};
+  'pwa.js':'application/javascript;charset=utf-8','sw.js':'application/javascript;charset=utf-8',
+  'styles.css':'text/css;charset=utf-8','robots.txt':'text/plain;charset=utf-8',
+  'manifest.webmanifest':'application/manifest+json;charset=utf-8',
+  'icons/icon-192.png':'image/png','icons/icon-512.png':'image/png',
+  'icons/apple-touch-icon.png':'image/png'};
 const allowed=new Set(Object.keys(mime));
 const server=http.createServer(async(req,res)=>{
   const name=req.url==='/'?'index.html':req.url?.slice(1).split('?')[0];
@@ -21,7 +29,8 @@ const server=http.createServer(async(req,res)=>{
     res.writeHead(404,{'Content-Type':'text/plain','Cache-Control':'no-store'});res.end('Not found');return;
   }
   const file=await fs.readFile(path.join(base,name));
-  res.writeHead(200,{'Content-Type':mime[name],...headers});
+  res.writeHead(200,{'Content-Type':mime[name],...headers,
+    ...(name==='sw.js'&&swCsp?{'Content-Security-Policy':swCsp}:{})});
   if(req.method==='HEAD')res.end();else res.end(file);
 });
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
@@ -47,18 +56,52 @@ try{
   assert.equal(response.headers()['referrer-policy'],'no-referrer');
   assert.equal(await page.title(),'TruTimeClock | Free Visual Timer');
 
-  const downloadLink=page.locator('#download-trigger');
-  await downloadLink.waitFor({state:'visible'});
-  assert.equal(await downloadLink.textContent(),'Download');
+  const downloadButton=page.locator('#download-trigger');
+  await downloadButton.waitFor({state:'visible'});
+  assert.equal(await downloadButton.textContent(),'Download');
   assert.equal(await page.locator('#update-trigger').count(),0);
   const version=JSON.parse(await fs.readFile(path.join(root,'package.json'),'utf8')).version;
-  assert.equal(await downloadLink.getAttribute('href'),
-    'https://github.com/TruJ0e/clock-counter/releases/download/v'+version+
-    '/TruTimeClock-Setup-'+version+'.exe');
+  const release='https://github.com/TruJ0e/clock-counter/releases/download/v'+version+'/';
   const helpRect=await page.locator('#help-trigger').boundingBox();
-  const downloadRect=await downloadLink.boundingBox();
-  assert.ok(downloadRect.x>=helpRect.x+helpRect.width-1,
-    'Download should appear immediately to the right of Help');
+  const downloadRect=await downloadButton.boundingBox();
+  assert.ok(downloadRect.x>=helpRect.x+helpRect.width-1,'Download must be right of Help');
+  await downloadButton.click();
+  assert.equal(await page.locator('#download-dialog').isVisible(),true);
+  assert.equal(await page.locator('#download-windows').getAttribute('href'),
+    release+'TruTimeClock-Setup-'+version+'.exe');
+  assert.equal(await page.locator('#download-mac-arm').getAttribute('href'),
+    release+'TruTimeClock-Mac-arm64-'+version+'.dmg');
+  assert.equal(await page.locator('#download-mac-intel').getAttribute('href'),
+    release+'TruTimeClock-Mac-x64-'+version+'.dmg');
+  assert.ok((await page.locator('#download-dialog').textContent()).includes('Add to Home Screen'));
+  await page.locator('#download-done').click();
+  assert.equal(await page.locator('#download-dialog').isVisible(),false);
+  const company='https://trujoedigital.com/';
+  assert.equal(await page.locator('#site-trujoe-link').getAttribute('href'),company);
+  await page.locator('#help-trigger').click();
+  assert.equal(await page.locator('#help-trujoe-link').getAttribute('href'),company);
+  await page.locator('#help-done').click();
+  const manifestResponse=await page.request.get(origin+'/manifest.webmanifest');
+  assert.equal(manifestResponse.status(),200);
+  const manifest=await manifestResponse.json();
+  assert.equal(manifest.name,'TruTimeClock');
+  assert.equal(manifest.display,'standalone');
+  assert.ok(manifest.icons.length>=2);
+  assert.ok((await page.request.get(origin+'/icons/apple-touch-icon.png')).ok());
+  assert.ok((await page.request.get(origin+'/sw.js')).ok());
+  assert.ok(response.headers()['content-security-policy'].includes("worker-src 'self'"));
+
+  // Cache the full app as a service worker, then launch without network.
+  await page.waitForFunction(()=>{
+    if(!('serviceWorker' in navigator))return false;
+    return !!navigator.serviceWorker.controller;
+  },undefined,{timeout:12000});
+  await page.context().setOffline(true);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('.clock-tile').first().waitFor({timeout:10000});
+  assert.equal(await page.title(),'TruTimeClock | Free Visual Timer');
+  await page.context().setOffline(false);
+  // CSS and app script remain cached offline. All paths are same-origin.
 
   await page.locator('.clock-tile').first().waitFor({timeout:15000});
   assert.equal(await page.locator('.clock-tile .time-readout').first().textContent(),'30:00');

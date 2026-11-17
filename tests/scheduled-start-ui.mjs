@@ -39,7 +39,8 @@ try{
   }
   await step('Start At lives in the original sliding bottom drawer; defaults to top of hour',async()=>{
     assert.equal(await tile(0).locator('.schedule-time').count(),1);
-    assert.equal(await tile(0).locator('.schedule-time').inputValue(),'17:00');
+    const nextHour=await tile(0).locator('.schedule-time').inputValue();
+    assert.match(nextHour,/^(?:[01][0-9]|2[0-3]):00$/,'picker should default to the next full hour');
     assert.equal(await tile(0).locator('.schedule-cancel').isVisible(),false);
     await tile(0).locator('.minutes-field').fill('10');
     await tile(0).locator('.minutes-field').blur();

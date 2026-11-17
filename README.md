@@ -6,9 +6,9 @@ Version **0.6.0** adds Start At scheduling to the desktop and website, on top of
 
 ## TruTimeClock public website
 
-The static website version of CLOCK COUNTER is served at **https://ttc.trujoedigital.com/** from Cloudflare Pages under the project **trutimeclock**. Only the files in `site/` are deployed: `index.html`, `app.js`, `styles.css`, `_headers`, `404.html`, `robots.txt`, and `sitemap.xml`. The public website needs no account, database, API, or application server and does **not** create a connection to your local computer.
+The static website version of CLOCK COUNTER is served at **https://ttc.trujoedigital.com/** from Cloudflare Pages under the project **trutimeclock**. Only the static files in `site/` are deployed: HTML, CSS, app JavaScript, the PWA manifest, same-origin service worker, brand icons, security headers, a 404 page, robots.txt and sitemap.xml. The public website needs no account, database, API, or application server and does **not** create a connection to your local computer.
 
-The site's content-security policy forbids network connections from app scripts and disallows third-party scripts, inline JavaScript, iframes and web workers. The Cloudflare Pages response headers also deny framing, limit browser permissions and require HTTPS where supported. User timer settings stay in the visitor's browser local storage; the only access to local files is through a user-initiated file picker for import and export. **No website can guarantee zero security risk**, but this design minimizes exposed functionality.
+The site's content-security policy forbids network connections from timer scripts and disallows third-party scripts, inline JavaScript and iframes. Only the audited same-origin service worker may make same-origin requests to cache the site's explicitly listed static assets for offline installation. The Cloudflare Pages response headers also deny framing, limit browser permissions and require HTTPS where supported. User timer settings stay in the visitor's browser local storage; the only access to local files is through a user-initiated file picker for import and export. **No website can guarantee zero security risk**, but this design minimizes exposed functionality.
 
 To refresh the static site from the tested browser edition, run `npm run build:ttc`, then `npm run test:ttc`. After deployment, `npm run test:ttc:live` checks the public custom domain and HTTP 404 behavior. Commit updated `site/` assets to `main`. Cloudflare Pages Git deployments publish those assets, without running Node.js or Electron in the hosted app.
 
@@ -17,6 +17,20 @@ To refresh the static site from the tested browser edition, run `npm run build:t
 For sharing with someone who just needs the timer, **CLOCK COUNTER Web Lite** is available as one self-contained HTML file (about 117 KB), or a ZIP download of about **29 KB**. It opens in an existing browser, requires no installation, works offline, and preserves the retro timer UI and most timer features. It cannot provide native Windows tray, always-on-top, or separate native floating-window functionality.
 
 Build it with npm run build:web-lite, test it with npm run test:web-lite, or open web-lite/CLOCK COUNTER WEB LITE.html directly. Full usage details and limitations are in web-lite/README.md. The full-featured Windows executable is still the best choice for system-tray operation and native desktop behavior.
+
+## Apple downloads and installation
+
+TruTimeClock is available on Apple devices as a standalone web app and on Mac computers as an Electron desktop application.
+
+**iPhone or iPad:** Open https://ttc.trujoedigital.com/ in Safari, select **Download** beside Help, then follow the **Add to Home Screen** instructions. In supported iOS/iPadOS versions, enable **Open as Web App**. The installed icon opens TruTimeClock in its own app-style window, with the retro clock and locally saved settings. After the first online load, core clock features are cached for offline use. iOS may suspend timers or alarms while the web app is closed or in the background; this is not a system-level alarm app or an App Store IPA.
+
+**macOS:** Open the website, select Download, then pick the DMG for **Apple Silicon (M1–M-series)** or **Intel Mac**. Open the DMG and drag **CLOCK COUNTER.app** to Applications. Alternatively, in macOS Sonoma or later use Safari > File > Add to Dock to install the website version.
+
+The standalone macOS DMGs are not signed or notarized with an Apple Developer ID. Gatekeeper may block opening until explicitly authorized in System Settings > Privacy & Security > Open Anyway. The Mac app's Update button opens the website to get the latest Mac build; **automatic native updates currently run only for the Windows installer**.
+
+The public website Download dialog also offers the Windows installer. The website footer and Help dialog both link to https://trujoedigital.com/. The public PWA remains static and does not connect to any local desktop or agent. Its service worker caches only same-origin, explicitly enumerated assets.
+
+Build macOS DMGs using `npm run build:mac` on macOS after generating the native icon with `bash scripts/generate-mac-icon.sh`. GitHub Actions builds and validates both CPU architectures, then publishes their DMGs to the existing public versioned GitHub release.
 
 ## Start At: scheduled clock starts (v0.6.0)
 

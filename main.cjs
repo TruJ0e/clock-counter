@@ -1,6 +1,6 @@
 'use strict';
 
-const {app,BrowserWindow,ipcMain,screen,Tray,Menu,dialog,Notification} = require('electron');
+const {app,BrowserWindow,ipcMain,screen,Tray,Menu,dialog,Notification,shell} = require('electron');
 const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
@@ -12,7 +12,7 @@ if(process.env.CLOCK_COUNTER_TEST_PROFILE) {
 }
 const DEFAULT_SIZE={width:490,height:570};
 const MIN_SIZE={width:250,height:260};
-const iconPath=path.join(__dirname,'assets','icon.ico');
+const iconPath=path.join(__dirname,'assets',process.platform==='darwin'?'app-icon-512.png':'icon.ico');
 const detached=new Map();
 let mainWindow=null;
 let tray=null;
@@ -201,6 +201,12 @@ app.whenReady().then(()=>{
   updates.start();
   ipcMain.handle('clock-counter:check-for-updates',async event=>{
     if(!canUseFile(BrowserWindow.fromWebContents(event.sender)))return {phase:'unavailable'};
+    if(process.platform==='darwin'&&app.isPackaged){
+      // Unsigned/notarized macOS DMGs cannot be silently self-installed.
+      // The manual button opens the trusted download page instead.
+      await shell.openExternal('https://ttc.trujoedigital.com/');
+      return {phase:'current',message:'OPENED MAC DOWNLOAD PAGE - SELECT YOUR MAC'};
+    }
     return updates.check({manual:true});
   });
   ipcMain.handle('clock-counter:get-update-status',async event=>{
