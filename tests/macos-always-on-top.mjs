@@ -10,7 +10,8 @@ if(process.platform!=='darwin'){
 }
 const root=path.resolve(import.meta.dirname,'..');
 const profile=await fs.mkdtemp(path.join(os.tmpdir(),'ttc-mac-top-'));
-const executablePath=path.join(root,'node_modules','electron','dist','Electron.app','Contents','MacOS','Electron');
+const packagedExecutable=process.env.CLOCK_COUNTER_MAC_TEST_EXECUTABLE;
+const executablePath=packagedExecutable||path.join(root,'node_modules','electron','dist','Electron.app','Contents','MacOS','Electron');
 let app=null;
 let page=null;
 let nativeWin=null;
@@ -19,7 +20,7 @@ const errors=[];
 async function launch() {
   app=await electron.launch({
     executablePath,
-    args:[root],
+    args:packagedExecutable?[]:[root],
     cwd:root,
     timeout:45000,
     env:{...process.env,CLOCK_COUNTER_TEST_PROFILE:profile}

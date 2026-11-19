@@ -35,9 +35,6 @@ jobs:
       - name: Run pure timer unit tests
         run: npm test
 
-      - name: Verify native macOS Always on Top behavior
-        run: npm run test:mac-top
-
       - name: Make native Apple icon
         run: bash scripts/generate-mac-icon.sh
 
@@ -69,6 +66,10 @@ jobs:
           if [[ "$native_arch" == "x64" ]]; then native_arch="x86_64"; fi
           lipo -archs "$bin" | grep -w "$native_arch"
           test -s "$app_path/Contents/Resources/app.asar"
+          # Test the actual packaged app inside the verified DMG, not a standalone
+          # npm Electron executable that may be absent on hosted macOS runners.
+          export CLOCK_COUNTER_MAC_TEST_EXECUTABLE="$bin"
+          npm run test:mac-top
           hdiutil detach "$mount_path" -quiet
           trap - EXIT
           shasum -a 256 "$image" > "$image.sha256"
