@@ -18,6 +18,12 @@ For sharing with someone who just needs the timer, **CLOCK COUNTER Web Lite** is
 
 Build it with npm run build:web-lite, test it with npm run test:web-lite, or open web-lite/CLOCK COUNTER WEB LITE.html directly. Full usage details and limitations are in web-lite/README.md. The full-featured Windows executable is still the best choice for system-tray operation and native desktop behavior.
 
+## macOS Always on Top fix (v0.6.1)
+
+**File → Always on top** on the downloadable Mac app now enables both Electron's floating window level and visibility across macOS Spaces, including full-screen Spaces where supported by macOS. Turning it off restores normal window stacking and Space behavior. The preference survives a normal app restart. The change is macOS-specific; Windows retains its existing Always on Top behavior.
+
+The iPhone/iPad browser-installed version cannot force Always on Top over other apps because iOS does not expose desktop window-stacking controls to web apps. Mac downloads remain unsigned and unnotarized. The Mac app's Update button links to the website for manual download; automatic native update installation remains Windows-only.
+
 ## Apple downloads and installation
 
 TruTimeClock is available on Apple devices as a standalone web app and on Mac computers as an Electron desktop application.

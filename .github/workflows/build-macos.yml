@@ -35,6 +35,9 @@ jobs:
       - name: Run pure timer unit tests
         run: npm test
 
+      - name: Verify native macOS Always on Top behavior
+        run: npm run test:mac-top
+
       - name: Make native Apple icon
         run: bash scripts/generate-mac-icon.sh
 
@@ -71,7 +74,7 @@ jobs:
           shasum -a 256 "$image" > "$image.sha256"
           echo "MAC_DMG_VERIFIED=$image"
 
-      - name: Upload verified DMG to public v0.6.0 release
+      - name: Upload verified DMG to public versioned release
         env:
           GH_TOKEN: ${{ github.token }}
           ARCH: ${{ matrix.arch }}

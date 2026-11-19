@@ -5,6 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
 const {createUpdateManager}=require('./src/update-manager.cjs');
+const {applyAlwaysOnTop}=require('./src/always-on-top.cjs');
 
 if(process.env.CLOCK_COUNTER_TEST_PROFILE) {
   fs.mkdirSync(process.env.CLOCK_COUNTER_TEST_PROFILE,{recursive:true});
@@ -110,6 +111,10 @@ function createWindow(){
     }
   });
   if(layoutLocked)mainWindow.setResizable(false);
+  // BrowserWindow's alwaysOnTop property alone is insufficient on macOS:
+  // restore Spaces/full-screen visibility before the main window is shown.
+  if(process.platform==='darwin'&&saved.alwaysOnTop===true)
+    applyAlwaysOnTop(mainWindow,true);
   mainWindow.loadFile(path.join(__dirname,'index.html'));
   mainWindow.once('ready-to-show',()=>{
     mainWindow.show();
@@ -226,7 +231,7 @@ app.whenReady().then(()=>{
       case 'close':win.close();break;
       case 'quit':isQuitting=true;app.quit();break;
       case 'toggle-always-on-top':
-        win.setAlwaysOnTop(!win.isAlwaysOnTop());
+        applyAlwaysOnTop(win,!win.isAlwaysOnTop());
         saveWindowState(win);
         win.webContents.send('clock-counter:always-on-top',win.isAlwaysOnTop());
         break;
