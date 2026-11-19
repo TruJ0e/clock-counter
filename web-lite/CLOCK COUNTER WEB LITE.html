@@ -2761,10 +2761,14 @@ document.querySelectorAll('[data-preset]').forEach(button => {
 $('menu-top').addEventListener('click', () => { action('toggle-always-on-top'); closeFileMenu(); });
 $('menu-fullscreen').addEventListener('click', () => { action('toggle-fullscreen'); closeFileMenu(); });
 $('menu-exit').addEventListener('click', () => action('close'));
-desktop?.onAlwaysOnTop?.(value => {
+function showAlwaysOnTopState(value) {
   $('top-check').textContent = value ? '✓' : '';
   $('menu-top').setAttribute('aria-pressed', String(value));
-});
+}
+desktop?.onAlwaysOnTop?.(showAlwaysOnTopState);
+// The native ready-to-show event may precede renderer subscriptions. Query
+// current window state so a restored Mac setting never appears unchecked.
+desktop?.getAlwaysOnTop?.().then(showAlwaysOnTopState).catch(()=>{});
 for (const [id, command] of [
   ['window-minimize','minimize'], ['window-maximize','maximize'],['window-close','close']
 ]) $(id).addEventListener('click', () => action(command));
