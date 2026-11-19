@@ -214,6 +214,11 @@ app.whenReady().then(()=>{
     }
     return updates.check({manual:true});
   });
+  ipcMain.handle('clock-counter:get-always-on-top',async event=>{
+    if(!canUseFile(BrowserWindow.fromWebContents(event.sender)))return false;
+    return mainWindow.isAlwaysOnTop();
+  });
+
   ipcMain.handle('clock-counter:get-update-status',async event=>{
     if(!canUseFile(BrowserWindow.fromWebContents(event.sender)))return {phase:'unavailable'};
     return updates.getStatus();

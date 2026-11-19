@@ -15,6 +15,7 @@ function subscribe(channel,listener){
 contextBridge.exposeInMainWorld('clockCounterWindow',{
   action(action,payload){if(allowedActions.has(action))ipcRenderer.send('clock-counter:window',action,payload);},
   onAlwaysOnTop(listener){return subscribe('clock-counter:always-on-top',listener);},
+  getAlwaysOnTop(){return ipcRenderer.invoke('clock-counter:get-always-on-top');},
   onNativeState(listener){return subscribe('clock-counter:native-state',listener);},
   onTrayAction(listener){return subscribe('clock-counter:tray-action',listener);},
   onRemoteControl(listener){return subscribe('clock-counter:remote-control',listener);},

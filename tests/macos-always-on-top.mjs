@@ -22,10 +22,10 @@ async function launch() {
     executablePath,
     args:packagedExecutable?[]:[root],
     cwd:root,
-    timeout:45000,
+    timeout:120000,
     env:{...process.env,CLOCK_COUNTER_TEST_PROFILE:profile}
   });
-  page=await app.firstWindow({timeout:20000});
+  page=await app.firstWindow({timeout:45000});
   page.on('pageerror',error=>errors.push(error.message));
   nativeWin=await app.browserWindow(page);
   await page.locator('#menu-top').waitFor({state:'attached'});

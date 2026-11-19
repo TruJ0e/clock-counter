@@ -291,6 +291,7 @@ try {
     assert.equal(bounds.width,825);
     assert.equal(bounds.height,640);
     assert.equal(await win.evaluate(w=>w.isAlwaysOnTop()),expectedTop);
+    assert.equal(await page.locator('#menu-top').getAttribute('aria-pressed'),String(expectedTop));
     const storage=await app.evaluate(({app})=>app.getPath('userData'));
     assert.equal(path.resolve(storage),path.resolve(profile));
   });
