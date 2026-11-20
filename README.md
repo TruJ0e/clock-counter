@@ -24,6 +24,14 @@ Build it with npm run build:web-lite, test it with npm run test:web-lite, or ope
 
 The iPhone/iPad browser-installed version cannot force Always on Top over other apps because iOS does not expose desktop window-stacking controls to web apps. Mac downloads remain unsigned and unnotarized. The Mac app's Update button links to the website for manual download; automatic native update installation remains Windows-only.
 
+## TruTimeClock Mobile developer beta
+
+Native mobile projects are available under **mobile/** and documented in **mobile/README.md**. Both bundle the existing offline timer engine.
+
+- **Android:** A native Kotlin WebView app with an explicit FLOAT button starts a draggable, collapsible overlay above other apps. A foreground-service notification remains visible. The testing APK is under the GitHub prerelease **mobile-v0.1.0-beta.2**. Android requires user approval for Display over other apps, and the beta has not yet been verified on a physical Android device.
+- **iPhone/iPad:** A native SwiftUI app with an ActivityKit Live Activity extension compiles and is available as an **unsigned iOS Simulator artifact** in GitHub Actions. A directly installable iPhone build still needs the owner's Apple Developer certificate, provisioning and physical device testing. Dynamic Island and Lock Screen countdowns are supported where hardware allows; an iPhone cannot display an arbitrary always-on-top floating timer above other apps using public APIs.
+- The mobile app bundle is generated via **npm run build:mobile** and checked with **npm run test:mobile**. Neither native app connects back to a personal computer or a remote-control service.
+
 ## Apple downloads and installation
 
 TruTimeClock is available on Apple devices as a standalone web app and on Mac computers as an Electron desktop application.

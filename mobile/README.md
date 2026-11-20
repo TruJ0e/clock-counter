@@ -5,7 +5,7 @@ The desktop timer's existing web engine powers both mobile wrappers. The mobile 
 ## Android
 
 - Source: mobile/android (native Kotlin + offline WebViewAssetLoader).
-- Install/debug-build: download the GitHub Actions TruTimeClock-Android-floating-debug artifact, extract it and install the APK on an Android device with sideloading enabled.
+- Install/debug-build: download the public experimental Android beta at https://github.com/TruJ0e/clock-counter/releases/tag/mobile-v0.1.0-beta.2, or download the latest successful GitHub Actions TruTimeClock-Android-floating-debug artifact. Install on a device you control with sideloading enabled.
 - Launch the app and use its full-screen retro timer. Tap FLOAT and grant Android's Display over other apps permission when prompted. The native overlay appears, follows the selected timer, and remains visible while you switch apps.
 - Drag the arrows to move it, tap the square to collapse or expand, or tap the close symbol or STOP FLOAT to dismiss it.
 - A foreground-service notification remains visible while floating mode is active. Scheduled and running timers derive remaining time from absolute timestamps, so moving away from the app does not stop the floating display.
