@@ -200,9 +200,14 @@ class ClockOverlayService : Service() {
                 label?.text=snapshot.labelAt(now)
                 label?.setTextColor(snapshot.color)
                 // A completion is visible even when the WebView is backgrounded.
-                if(snapshot.running && snapshot.deadlineMs!=null &&
-                    now>=snapshot.deadlineMs && notifiedFor!=snapshot.deadlineMs) {
-                    notifiedFor=snapshot.deadlineMs
+                val deadline = snapshot.deadlineMs ?: snapshot.scheduledStartMs?.let {
+                    it + snapshot.durationMs
+                }
+                val eligible = snapshot.mode != "stopwatch" &&
+                    (snapshot.running || snapshot.scheduledStartMs != null)
+                if(eligible && deadline != null &&
+                    now >= deadline && notifiedFor != deadline) {
+                    notifiedFor=deadline
                     showFinishedNotification(snapshot.title)
                 }
             }

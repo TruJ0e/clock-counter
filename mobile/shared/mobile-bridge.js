@@ -21,6 +21,7 @@
       running,
       scheduledStartMs:start,
       deadlineMs:deadline,
+      startedAtMs:Number.isFinite(clock.startedAtMs)?clock.startedAtMs:null,
       remainingMs:Math.max(0,Math.round(Number(clock.remainingMs)||0)),
       elapsedMs:Math.max(0,Math.round(Number(clock.elapsedMs)||0)),
       durationMs:Math.max(0,Math.round((Number(clock.durationSeconds)||0)*1000)),

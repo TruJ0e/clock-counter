@@ -60,6 +60,7 @@ try {
     await page.waitForFunction(()=>window.__mobileCaptures.some(s=>s.running===true));
     const running=await page.evaluate(()=>window.__mobileCaptures.at(-1));
     assert.equal(running.running,true);
+    assert.ok('startedAtMs' in running,'Native bridge must include stopwatch baseline');
     assert.ok(running.deadlineMs>Date.now());
     assert.ok(running.deadlineMs<Date.now()+1810000);
     assert.deepEqual(errors,[],'uncaught error in '+platform+' web bridge');

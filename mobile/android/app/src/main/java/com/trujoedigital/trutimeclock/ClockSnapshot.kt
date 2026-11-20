@@ -10,6 +10,7 @@ data class ClockSnapshot(
     val running: Boolean,
     val scheduledStartMs: Long?,
     val deadlineMs: Long?,
+    val startedAtMs: Long?,
     val durationMs: Long,
     val remainingMs: Long,
     val elapsedMs: Long,
@@ -35,6 +36,7 @@ data class ClockSnapshot(
                 running = json.optBoolean("running", false),
                 scheduledStartMs = millis("scheduledStartMs"),
                 deadlineMs = millis("deadlineMs"),
+                startedAtMs = millis("startedAtMs"),
                 durationMs = duration,
                 remainingMs = json.optLong("remainingMs", duration).coerceIn(0, 359999000L),
                 elapsedMs = json.optLong("elapsedMs", 0L).coerceIn(0, 359999000L),
@@ -57,7 +59,8 @@ data class ClockSnapshot(
             return "START IN " + formatted(seconds)
         }
         if(mode == "stopwatch" && running) {
-            val elapsed = if (deadlineMs != null) elapsedMs else elapsedMs
+            val elapsed = if (startedAtMs != null)
+                (now - startedAtMs).coerceAtLeast(0) else elapsedMs
             return formatted(elapsed / 1000)
         }
         return formatted((remainingAt(now) + 999) / 1000)
