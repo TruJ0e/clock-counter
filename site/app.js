@@ -827,6 +827,7 @@ function selectClock(id) {
   state.activeId = id;
   for (const [clockId, refs] of tileRefs) refs.root.classList.toggle('selected', clockId === id);
   updateFocusTarget();
+  window.TruTimeClockMobile?.clockChanged?.(getClock(id));
 }
 
 // Each timer has its own bottom control drawer, independent of its countdown.
@@ -869,6 +870,7 @@ function changeClock(id, update, persist = false) {
   state.clocks[index] = next;
   renderClock(next);
   publishDetached(next);
+  if(state.activeId===id)window.TruTimeClockMobile?.clockChanged?.(next);
   syncTicker();
   if (persist) save();
   return next;
@@ -2008,6 +2010,7 @@ grip.addEventListener('keydown', event => {
 
 refreshBoard();
 syncTicker();
+window.TruTimeClockMobile?.clockChanged?.(getClock(state.activeId));
 renderPresetMenu();
 if (localStorage.getItem('clock-counter:clock-only') === 'true') setClockOnly(true);
 updateStatus('READY — ' + state.clocks.length + ' CLOCK' + (state.clocks.length === 1 ? '' : 'S'));

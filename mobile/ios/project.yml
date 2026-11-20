@@ -1,0 +1,48 @@
+name: TruTimeClockMobile
+options:
+  bundleIdPrefix: com.trujoedigital
+  minimumXcodeGenVersion: 2.40.0
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+  TruTimeClockMobile:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: TruTimeClock
+      - path: Shared
+      - path: Web
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - target: TruTimeClockWidgets
+        embed: true
+    info:
+      path: TruTimeClock/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.trujoedigital.trutimeclock.mobile
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: NO
+        SUPPORTS_MACCATALYST: NO
+
+  TruTimeClockWidgets:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: TruTimeClockWidgets
+      - path: Shared
+    info:
+      path: TruTimeClockWidgets/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.trujoedigital.trutimeclock.mobile.widgets
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES

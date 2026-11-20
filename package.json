@@ -30,7 +30,9 @@
     "test:update-ui": "node tests/update-ui.mjs",
     "test:schedule": "node tests/scheduled-start-ui.mjs",
     "build:mac": "electron-builder --mac dmg --publish never",
-    "test:mac-top": "node tests/macos-always-on-top.mjs"
+    "test:mac-top": "node tests/macos-always-on-top.mjs",
+    "build:mobile": "node scripts/build-mobile-assets.cjs",
+    "test:mobile": "npm run build:mobile && node tests/mobile-bundle.mjs"
   },
   "devDependencies": {
     "electron": "^45.3.2",

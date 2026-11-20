@@ -1,5 +1,5 @@
 'use strict';
-const CACHE_NAME='trutimeclock-static-aabec89d3f89';
+const CACHE_NAME='trutimeclock-static-4e0b9882d756';
 const CACHE_PREFIX='trutimeclock-static-';
 const STATIC_ASSETS=[
   '/',

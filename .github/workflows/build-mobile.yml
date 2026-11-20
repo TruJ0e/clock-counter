@@ -1,0 +1,98 @@
+name: Build TruTimeClock Mobile (Android + iOS simulator)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Android overlay APK (debug beta)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Bundle offline clock assets
+        run: npm run build:mobile
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Build debug Android APK
+        working-directory: mobile/android
+        run: gradle --no-daemon assembleDebug
+      - name: Check APK metadata and bundled clock
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="mobile/android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$apk"
+          unzip -l "$apk" | grep 'assets/index.html'
+          unzip -l "$apk" | grep 'assets/app.js'
+          unzip -l "$apk" | grep 'classes.dex'
+          sha256sum "$apk" > "$apk.sha256"
+          echo "DEBUG_APK_BYTES=$(stat -c %s "$apk")"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TruTimeClock-Android-floating-debug
+          path: |
+            mobile/android/app/build/outputs/apk/debug/app-debug.apk
+            mobile/android/app/build/outputs/apk/debug/app-debug.apk.sha256
+          if-no-files-found: error
+
+  ios:
+    name: iOS + Dynamic Island simulator build
+    runs-on: macos-15
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Bundle offline clock assets
+        run: npm run build:mobile
+      - name: Set up XcodeGen
+        run: brew install xcodegen
+      - name: Generate iOS Xcode project
+        working-directory: mobile/ios
+        run: xcodegen generate --spec project.yml
+      - name: Compile iPhone/iPad app and Live Activity
+        working-directory: mobile/ios
+        run: |
+          xcodebuild \
+            -project TruTimeClockMobile.xcodeproj \
+            -scheme TruTimeClockMobile \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/ttc-ios-derived" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      - name: Validate unsigned Simulator app
+        shell: bash
+        run: |
+          set -euo pipefail
+          app="$RUNNER_TEMP/ttc-ios-derived/Build/Products/Debug-iphonesimulator/TruTimeClockMobile.app"
+          test -d "$app"
+          test -s "$app/Info.plist"
+          plutil -lint "$app/Info.plist"
+          test -s "$app/Web/index.html"
+          test -s "$app/Web/mobile-bridge.js"
+          test -d "$app/PlugIns/TruTimeClockWidgets.appex"
+          /usr/libexec/PlistBuddy -c 'Print :NSSupportsLiveActivities' "$app/Info.plist"
+          echo "iOS app and Live Activity compiled and validated"
+      - name: Upload unsigned Simulator build (not an installable iPhone IPA)
+        uses: actions/upload-artifact@v4
+        with:
+          name: TruTimeClock-iOS-simulator-unpublished
+          path: ${{ runner.temp }}/ttc-ios-derived/Build/Products/Debug-iphonesimulator/TruTimeClockMobile.app
+          if-no-files-found: error
+          retention-days: 7
