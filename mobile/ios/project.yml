@@ -25,6 +25,10 @@ targets:
         embed: true
     info:
       path: TruTimeClock/Info.plist
+      properties:
+        NSSupportsLiveActivities: true
+        CFBundleDisplayName: TruTimeClock
+        UILaunchScreen: {}
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.trujoedigital.trutimeclock.mobile
